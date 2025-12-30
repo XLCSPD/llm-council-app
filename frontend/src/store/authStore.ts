@@ -17,6 +17,7 @@ interface AuthState {
   signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  verifyCurrentPassword: (password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
 }
@@ -104,6 +105,22 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
+    return { error };
+  },
+
+  verifyCurrentPassword: async (password) => {
+    const state = useAuthStore.getState();
+    const email = state.user?.email;
+
+    if (!email) {
+      return { error: new Error('No user email available') };
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     return { error };
   },
 

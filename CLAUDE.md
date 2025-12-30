@@ -24,11 +24,11 @@ LLM Council is a multi-agent AI deliberation platform that assembles configurabl
 
 ### Frontend (`frontend/`)
 - React 18 + TypeScript + Vite
-- Zustand for state management (councilStore, sessionStore, authStore, uiStore)
+- Zustand for state management
 - Tailwind CSS with CSS variables for theming
 - Supabase Realtime subscriptions for live updates during runs
-- Feature-based organization (`features/council-builder`, `features/reasoning`, `features/review`, `features/synthesis`)
-- Path alias: `@/*` maps to `src/*` (e.g., `import { supabase } from '@/lib/supabase'`)
+- Feature-based organization in `features/` (council-builder, reasoning, review, synthesis, settings, pdf-export)
+- Path alias: `@/*` maps to `src/*`
 
 ### Orchestrator (`orchestrator/`)
 - FastAPI service that executes council deliberations
@@ -42,10 +42,6 @@ LLM Council is a multi-agent AI deliberation platform that assembles configurabl
 - Realtime subscriptions for live run updates
 - Tables: `orgs`, `org_members`, `projects`, `sessions`, `prompts`, `runs`, `run_models`, `model_outputs`, `peer_reviews`, `artifacts`
 
-### Legacy Backend (`backend/`)
-- Original FastAPI backend (being migrated to orchestrator + Supabase)
-- JSON file-based storage with repository pattern
-
 ## Four-Phase Deliberation Flow
 
 1. **Setup** (Phase 1): Configure prompt, select models, assign roles (Thinker, Critic, Devil's Advocate, Chair)
@@ -55,60 +51,44 @@ LLM Council is a multi-agent AI deliberation platform that assembles configurabl
 
 ## Build Commands
 
-### Orchestrator (Main Backend)
-```bash
-cd orchestrator
-
-# Create and activate virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run development server (port 8002)
-python -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload
-
-# Check health
-curl http://localhost:8002/health
-```
-
 ### Frontend
 ```bash
 cd frontend
-
 npm install
 npm run dev          # Development server (port 5173)
-npm run build        # Production build
+npm run build        # Production build (runs tsc -b && vite build)
 npm run lint         # ESLint
-npx tsc --noEmit     # Type check
+npx tsc --noEmit     # Type check only
 ```
-Note: `vite.config.ts` proxies `/api` to port 8001 (legacy backend). The frontend uses `VITE_ORCHESTRATOR_URL` env var for orchestrator calls.
 
-### Supabase (Local Development)
+### Orchestrator
 ```bash
-# Install CLI
+cd orchestrator
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+```
+
+### Docker Deployment
+```bash
+# Copy and configure environment
+cp .env.docker.example .env
+# Edit .env with Supabase + OpenRouter credentials
+
+# Build and run
+docker-compose up -d --build
+
+# Frontend: http://localhost (port 80)
+# Orchestrator: http://localhost:8002
+```
+
+### Supabase
+```bash
 brew install supabase/tap/supabase
-
-# Start local Supabase
-supabase start
-
-# Apply migrations
-supabase db reset
-
-# Link to cloud project
 supabase link --project-ref <project-id>
-supabase db push
-```
-
-### Legacy Backend (deprecated)
-```bash
-cd backend
-uv sync
-uv run uvicorn app.main:app --reload --port 8001
-uv run pytest
-uv run ruff check app/
-uv run ruff format app/
+supabase db push     # Apply migrations to cloud
+supabase db reset    # Reset local database
 ```
 
 ## Environment Variables
@@ -128,6 +108,45 @@ OPENROUTER_API_KEY=your-openrouter-key
 DEBUG=true
 ```
 
+## State Management (Zustand Stores)
+
+- **councilStore** - Selected models and role assignments for current council
+- **sessionStore** - Current session, prompt, run state, and deliberation results
+- **authStore** - User authentication state, login/logout, Supabase session
+- **uiStore** - Theme, sidebar state, mobile responsiveness
+- **settingsStore** - User preferences
+- **helpStore** - Help/tour system state
+
+Stores are imported from `@/store/` and use Zustand's `create()` pattern.
+
+## Realtime Subscription Pattern
+
+The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to Supabase Realtime channels for live updates:
+- Subscribes to `runs`, `run_models`, `model_outputs`, `peer_reviews` tables
+- Uses `postgres_changes` event type with filters by `run_id`
+- Provides callbacks: `onPhaseChange`, `onStatusChange`, `onModelOutput`, `onPeerReview`
+
+## Key Files
+
+### Orchestrator
+- `main.py` - FastAPI entry point, run endpoints (`POST /api/runs`, `GET /api/runs/{run_id}`)
+- `services/runner.py` - Deliberation pipeline (phases 2-4 execution)
+- `services/openrouter.py` - LLM API client with parallel execution
+- `services/prompts.py` - Prompt templates for reasoning, review, synthesis phases
+- `services/prompt_enhancer.py` - AI-powered prompt enhancement service
+- `db/supabase.py` - Database operations
+
+### Frontend
+- `src/App.tsx` - Main application, phase routing with AuthGuard
+- `src/store/` - Zustand stores
+- `src/features/` - Phase-specific components
+- `src/api/orchestrator.ts` - Orchestrator API client
+- `src/hooks/useRealtimeRun.ts` - Supabase realtime subscription hook
+- `src/lib/supabase.ts` - Supabase client configuration
+
+### Database
+- `supabase/migrations/001_initial_schema.sql` - Full schema with RLS policies
+
 ## API Endpoints
 
 ### Orchestrator (port 8002)
@@ -136,25 +155,7 @@ DEBUG=true
 - `GET /api/runs/{run_id}` - Get run status and results
 - `POST /api/runs/{run_id}/cancel` - Cancel a running deliberation
 
-### Supabase Realtime
-The frontend subscribes to `runs`, `run_models`, `model_outputs`, and `peer_reviews` tables for live updates during deliberation.
+## Notes
 
-## Key Files
-
-### Orchestrator
-- `orchestrator/main.py` - FastAPI entry point, run endpoints
-- `orchestrator/services/runner.py` - Deliberation pipeline (phases 2-4 execution)
-- `orchestrator/services/openrouter.py` - LLM API client
-- `orchestrator/services/prompts.py` - Prompt templates for each phase
-- `orchestrator/db/supabase.py` - Database operations
-
-### Frontend
-- `frontend/src/App.tsx` - Main application, phase routing with AuthGuard
-- `frontend/src/store/` - Zustand stores (councilStore, sessionStore, authStore, uiStore)
-- `frontend/src/features/` - Phase-specific components
-- `frontend/src/api/orchestrator.ts` - Orchestrator API client
-- `frontend/src/hooks/useRealtimeRun.ts` - Supabase realtime subscription hook
-- `frontend/src/lib/supabase.ts` - Supabase client configuration
-
-### Database
-- `supabase/migrations/001_initial_schema.sql` - Full schema with RLS policies
+- The `/api` proxy in `vite.config.ts` points to port 8001 (legacy backend). The frontend uses `VITE_ORCHESTRATOR_URL` for orchestrator calls directly.
+- `backend/` contains the legacy FastAPI backend (deprecated) - new development should use `orchestrator/`

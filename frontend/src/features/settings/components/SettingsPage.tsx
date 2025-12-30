@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { APISettingsSection } from './APISettingsSection';
 import { ModelDefaultsSection } from './ModelDefaultsSection';
 import { PreferencesSection } from './PreferencesSection';
+import { AccountSection } from './AccountSection';
 
 export function SettingsPage() {
   const setCurrentView = useUIStore((state) => state.setCurrentView);
@@ -52,6 +53,15 @@ export function SettingsPage() {
             User Preferences
           </h2>
           <PreferencesSection />
+        </GlassCard>
+
+        {/* Account */}
+        <GlassCard variant="default" padding="lg">
+          <h2 className="text-lg font-semibold text-text-primary mb-6 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-gradient-accent rounded-full" />
+            Account
+          </h2>
+          <AccountSection />
         </GlassCard>
       </div>
     </div>
