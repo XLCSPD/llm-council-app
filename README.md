@@ -125,6 +125,65 @@ OPENROUTER_API_KEY=your-openrouter-key
 DEBUG=true
 ```
 
+## Docker Deployment
+
+The easiest way to deploy LLM Council is using Docker.
+
+### Quick Start with Docker Compose
+
+1. **Copy environment template**
+   ```bash
+   cp .env.docker.example .env
+   ```
+
+2. **Edit `.env` with your credentials**
+   ```bash
+   # Required: Supabase credentials
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+
+   # Required: OpenRouter API key
+   OPENROUTER_API_KEY=your-openrouter-key
+
+   # Orchestrator URL for frontend
+   VITE_ORCHESTRATOR_URL=http://localhost:8002
+   ```
+
+3. **Build and start services**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+4. **Access the application**
+   - Frontend: http://localhost
+   - Orchestrator API: http://localhost:8002
+
+### Individual Container Builds
+
+**Build Frontend:**
+```bash
+docker build -t llm-council-frontend ./frontend \
+  --build-arg VITE_SUPABASE_URL=your-url \
+  --build-arg VITE_SUPABASE_ANON_KEY=your-key \
+  --build-arg VITE_ORCHESTRATOR_URL=http://localhost:8002
+```
+
+**Build Orchestrator:**
+```bash
+docker build -t llm-council-orchestrator ./orchestrator
+```
+
+### Production Deployment
+
+For production, update `VITE_ORCHESTRATOR_URL` to your production orchestrator URL and consider:
+
+- Using a reverse proxy (nginx/traefik) for SSL termination
+- Setting `DEBUG=false` in orchestrator environment
+- Using Docker secrets for sensitive values
+- Setting up health check monitoring
+
 ## Usage
 
 1. **Create a New Session** - Click "New Session" in the sidebar
