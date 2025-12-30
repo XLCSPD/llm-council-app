@@ -272,6 +272,7 @@ export function SetupPhase() {
                 </div>
               </div>
               <GradientButton
+                data-tour="model-selector"
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowModelSelector(!showModelSelector)}
@@ -318,7 +319,7 @@ export function SetupPhase() {
                   <p className="text-text-muted">No models selected. Add at least 2 models to your council.</p>
                 </div>
               ) : (
-                selectedModels.map((member) => (
+                selectedModels.map((member, index) => (
                   <GlassCard
                     key={member.id}
                     variant="subtle"
@@ -356,7 +357,7 @@ export function SetupPhase() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="flex-1">
+                      <div className="flex-1" {...(index === 0 ? { 'data-tour': 'role-selector' } : {})}>
                         <label className="block text-xs text-text-muted mb-1.5">Role</label>
                         <div className="relative">
                           <select
@@ -378,7 +379,7 @@ export function SetupPhase() {
                         </div>
                       </div>
 
-                      <div className="w-24">
+                      <div className="w-24" {...(index === 0 ? { 'data-tour': 'model-weight' } : {})}>
                         <label className="block text-xs text-text-muted mb-1.5">Weight</label>
                         <input
                           type="number"
@@ -409,6 +410,7 @@ export function SetupPhase() {
 
           {/* Start Button */}
           <GradientButton
+            data-tour="start-button"
             onClick={handleStartDeliberation}
             disabled={!isValidCouncil() || !prompt.content.trim() || isStarting}
             size="lg"

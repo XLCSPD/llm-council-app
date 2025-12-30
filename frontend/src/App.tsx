@@ -1,7 +1,8 @@
 import { useEffect, useCallback } from 'react';
 import { MainLayout } from '@/components/layout';
 import { AuthGuard, ResetPasswordPage } from '@/components/auth';
-import { useSessionStore, useCouncilStore, useAuthStore, useUIStore } from '@/store';
+import { TourOverlay } from '@/components/ui';
+import { useSessionStore, useCouncilStore, useAuthStore, useUIStore, useHelpStore } from '@/store';
 import { modelsApi } from '@/api';
 import { supabase } from '@/lib/supabase';
 import { SetupPhase } from '@/features/council-builder/components/SetupPhase';
@@ -9,6 +10,7 @@ import { ReasoningPhase } from '@/features/reasoning';
 import { ReviewPhase } from '@/features/review';
 import { SynthesisPhase } from '@/features/synthesis';
 import { SettingsPage } from '@/features/settings';
+import { HelpPage } from '@/features/help';
 import type { SessionSummary, ModelInfo } from '@/types';
 
 // Fallback models when backend API is unavailable - Updated Dec 2025
@@ -112,9 +114,26 @@ function AppContent() {
     [loadSessionForReplay]
   );
 
-  // Render the appropriate phase component or settings
+  // First-time user tour detection
+  useEffect(() => {
+    const { tourCompleted, tourDismissed, startTour } = useHelpStore.getState();
+    // Show tour for first-time users after a short delay
+    if (!tourCompleted && !tourDismissed && user) {
+      const timer = setTimeout(() => {
+        startTour();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
+  // Render the appropriate phase component or settings/help
   const renderPhase = () => {
-    // Check for settings view first
+    // Check for help view first
+    if (currentView === 'help') {
+      return <HelpPage />;
+    }
+
+    // Check for settings view
     if (currentView === 'settings') {
       return <SettingsPage />;
     }
@@ -136,11 +155,14 @@ function AppContent() {
 
   // Add key to force React to remount phase components when switching
   return (
-    <MainLayout onNewSession={handleNewSession} onSelectSession={handleSelectSession}>
-      <div key={`${currentView}-${currentPhase}`}>
-        {renderPhase()}
-      </div>
-    </MainLayout>
+    <>
+      <MainLayout onNewSession={handleNewSession} onSelectSession={handleSelectSession}>
+        <div key={`${currentView}-${currentPhase}`}>
+          {renderPhase()}
+        </div>
+      </MainLayout>
+      <TourOverlay />
+    </>
   );
 }
 

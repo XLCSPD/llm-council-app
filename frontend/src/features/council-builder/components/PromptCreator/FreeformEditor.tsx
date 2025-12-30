@@ -47,6 +47,7 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
             Your Question or Task
           </label>
           <button
+            data-tour="enhance-button"
             onClick={handleEnhance}
             disabled={!prompt.content.trim() || isEnhancing}
             className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full
@@ -67,6 +68,7 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
           </button>
         </div>
         <textarea
+          data-tour="prompt-input"
           value={prompt.content}
           onChange={(e) => updatePrompt({ content: e.target.value })}
           placeholder="What would you like the council to deliberate on?"
@@ -84,7 +86,7 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
       )}
 
       {/* Objective */}
-      <div>
+      <div data-tour="prompt-fields">
         <label className="block text-sm font-medium text-text-secondary mb-1.5">
           Objective (Optional)
         </label>
