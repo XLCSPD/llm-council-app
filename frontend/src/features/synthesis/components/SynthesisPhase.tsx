@@ -312,34 +312,34 @@ export function SynthesisPhase() {
 
             {/* Synthesis content */}
             <div className="bg-bg-secondary rounded-lg border border-border overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border-b border-border">
                 <div className="flex items-center gap-2">
                   <FileText className="w-5 h-5 text-text-muted" />
                   <h3 className="font-medium text-text-primary">Final Synthesis</h3>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => handleReplayCopy(parsedReplaySynthesis.rawContent)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors touch-target-sm"
                   >
                     {copied ? (
                       <>
                         <Check className="w-4 h-4 text-green-500" />
-                        Copied
+                        <span className="hidden sm:inline">Copied</span>
                       </>
                     ) : (
                       <>
                         <Copy className="w-4 h-4" />
-                        Copy
+                        <span className="hidden sm:inline">Copy</span>
                       </>
                     )}
                   </button>
                   <button
                     onClick={() => handleReplayExport(parsedReplaySynthesis.rawContent)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors touch-target-sm"
                   >
                     <Download className="w-4 h-4" />
-                    Export
+                    <span className="hidden sm:inline">Export</span>
                   </button>
                   <DownloadReportButton
                     sessionData={replayData}
@@ -638,34 +638,34 @@ export function SynthesisPhase() {
 
           {/* Synthesis content */}
           <div className="bg-bg-secondary rounded-lg border border-border overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-text-muted" />
                 <h3 className="font-medium text-text-primary">Final Synthesis</h3>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors touch-target-sm"
                 >
                   {copied ? (
                     <>
                       <Check className="w-4 h-4 text-green-500" />
-                      Copied
+                      <span className="hidden sm:inline">Copied</span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-4 h-4" />
-                      Copy
+                      <span className="hidden sm:inline">Copy</span>
                     </>
                   )}
                 </button>
                 <button
                   onClick={handleExport}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors touch-target-sm"
                 >
                   <Download className="w-4 h-4" />
-                  Export
+                  <span className="hidden sm:inline">Export</span>
                 </button>
                 {runData?.session_id && (
                   <DownloadReportButton

@@ -6,6 +6,7 @@ import {
   Settings,
   History,
   ChevronRight,
+  HelpCircle,
 } from 'lucide-react';
 import { useSessionStore, useUIStore } from '@/store';
 import type { SessionSummary } from '@/types';
@@ -25,7 +26,7 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
     <aside
       className={`
         fixed left-0 top-0 h-screen z-50
-        glass-strong flex flex-col
+        glass-strong hidden md:flex flex-col
         transition-all duration-300 ease-out
         ${isExpanded ? 'w-[280px]' : 'w-[72px]'}
       `}
@@ -36,7 +37,10 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
       }}
     >
       {/* Logo */}
-      <div className={`h-20 flex items-center border-b border-glass-border ${isExpanded ? 'px-3' : 'justify-center'}`}>
+      <div
+        data-tour="sidebar-logo"
+        className={`h-20 flex items-center border-b border-glass-border ${isExpanded ? 'px-3' : 'justify-center'}`}
+      >
         <div className={`rounded-lg overflow-hidden flex-shrink-0 ${isExpanded ? 'w-[60px] h-[60px]' : 'w-[48px] h-[48px]'}`}>
           <img src="/logo.png" alt="LLM Council" className="w-full h-full object-contain" />
         </div>
@@ -119,7 +123,15 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-2 border-t border-glass-border">
+      <div className="p-2 border-t border-glass-border space-y-1">
+        <NavItem
+          icon={<HelpCircle className="w-5 h-5" />}
+          label="Help"
+          isExpanded={isExpanded}
+          isActive={currentView === 'help'}
+          onClick={() => setCurrentView('help')}
+          dataTour="sidebar-help"
+        />
         <NavItem
           icon={<Settings className="w-5 h-5" />}
           label="Settings"
@@ -138,12 +150,14 @@ interface NavItemProps {
   isExpanded: boolean;
   isActive: boolean;
   onClick?: () => void;
+  dataTour?: string;
 }
 
-function NavItem({ icon, label, isExpanded, isActive, onClick }: NavItemProps) {
+function NavItem({ icon, label, isExpanded, isActive, onClick, dataTour }: NavItemProps) {
   return (
     <button
       onClick={onClick}
+      data-tour={dataTour}
       className={`
         w-full flex items-center gap-3 p-3 rounded-xl
         transition-colors

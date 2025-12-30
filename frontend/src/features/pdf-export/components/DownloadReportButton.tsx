@@ -61,7 +61,7 @@ export function DownloadReportButton({
         onClick={handleClick}
         disabled={isGenerating || !hasMinimumData}
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
-          rounded-lg transition-all duration-200
+          rounded-lg transition-all duration-200 touch-target-sm
           ${isGenerating
             ? 'bg-slate-700 text-slate-400 cursor-wait'
             : hasMinimumData
@@ -74,12 +74,12 @@ export function DownloadReportButton({
         {isGenerating ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Generating...</span>
+            <span className="hidden sm:inline">Generating...</span>
           </>
         ) : (
           <>
             <FileText className="w-4 h-4" />
-            <span>PDF Report</span>
+            <span className="hidden sm:inline">PDF Report</span>
           </>
         )}
       </button>

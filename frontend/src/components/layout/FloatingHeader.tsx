@@ -43,10 +43,10 @@ export function FloatingHeader() {
   };
 
   return (
-    <header className="fixed top-4 left-[88px] right-4 z-40">
-      <div className="glass rounded-2xl px-4 py-3 flex items-center justify-between">
+    <header className="fixed top-4 left-16 md:left-[88px] right-4 z-40">
+      <div className="glass rounded-2xl px-3 md:px-4 py-2.5 md:py-3 flex items-center justify-between">
         {/* Phase Navigation Pills */}
-        <nav className="hidden md:flex items-center gap-1 bg-bg-tertiary/50 rounded-xl p-1">
+        <nav data-tour="phase-tabs" className="hidden md:flex items-center gap-1 bg-bg-tertiary/50 rounded-xl p-1">
           {phases.map((phase) => {
             const status = getPhaseStatus(phase.key);
 
