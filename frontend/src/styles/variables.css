@@ -1,0 +1,98 @@
+/* CSS Custom Properties for theming - EveryDAI Solutions Brand */
+/* Dark theme is default (premium dashboard style) */
+
+:root {
+  /* Background colors - Navy gradient layers */
+  --color-bg-base: #0A1628;
+  --color-bg-primary: #0F1D32;
+  --color-bg-secondary: #152238;
+  --color-bg-tertiary: #1A2942;
+  --color-bg-elevated: #1F3150;
+
+  /* Glass effect colors */
+  --color-glass-bg: rgba(26, 54, 93, 0.4);
+  --color-glass-border: rgba(94, 234, 212, 0.15);
+
+  /* Text colors */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+
+  /* Border colors */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-focus: #0D9488;
+
+  /* Brand accent colors (EveryDAI - Teal/Cyan) */
+  --color-accent-primary: #0D9488;
+  --color-accent-secondary: #5EEAD4;
+  --color-accent-success: #10B981;
+  --color-accent-warning: #F59E0B;
+  --color-accent-error: #EF4444;
+
+  /* Gradient */
+  --accent-gradient: linear-gradient(135deg, #0D9488 0%, #5EEAD4 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #0F766E 0%, #2DD4BF 100%);
+
+  /* Role colors */
+  --color-role-thinker: #6366F1;
+  --color-role-critic: #F59E0B;
+  --color-role-devils-advocate: #EF4444;
+  --color-role-synthesizer: #0D9488;
+
+  /* Confidence colors */
+  --color-confidence-low: #EF4444;
+  --color-confidence-medium: #F59E0B;
+  --color-confidence-high: #10B981;
+
+  /* Glow effects */
+  --glow-teal: 0 0 20px rgba(13, 148, 136, 0.3);
+  --glow-cyan: 0 0 30px rgba(94, 234, 212, 0.25);
+  --glow-teal-strong: 0 0 40px rgba(13, 148, 136, 0.5);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+
+  /* Spacing */
+  --sidebar-width-collapsed: 72px;
+  --sidebar-width-expanded: 280px;
+  --header-height: 64px;
+}
+
+/* Light theme (toggle option) */
+[data-theme="light"] {
+  /* Background colors */
+  --color-bg-base: #F8FAFC;
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F1F5F9;
+  --color-bg-tertiary: #E2E8F0;
+  --color-bg-elevated: #FFFFFF;
+
+  /* Glass effect colors */
+  --color-glass-bg: rgba(255, 255, 255, 0.8);
+  --color-glass-border: rgba(13, 148, 136, 0.2);
+
+  /* Text colors */
+  --color-text-primary: #1A365D;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+
+  /* Border colors */
+  --color-border: #E2E8F0;
+  --color-border-focus: #0D9488;
+
+  /* Glow effects (subtle in light mode) */
+  --glow-teal: 0 0 15px rgba(13, 148, 136, 0.15);
+  --glow-cyan: 0 0 20px rgba(94, 234, 212, 0.1);
+  --glow-teal-strong: 0 0 30px rgba(13, 148, 136, 0.25);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
