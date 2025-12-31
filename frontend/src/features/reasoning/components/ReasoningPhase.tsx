@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Loader2, CheckCircle2, XCircle, Clock, ChevronRight, Brain } from 'lucide-react';
 import { useSessionStore, useCouncilStore } from '@/store';
 import { orchestratorApi } from '@/api/orchestrator';
@@ -140,8 +141,8 @@ export function ReasoningPhase() {
                   <div className="border-t border-glass-border">
                     {output ? (
                       <div className="p-4">
-                        <div className={`prose prose-sm max-w-none text-text-primary ${isExpanded ? '' : 'line-clamp-4'}`}>
-                          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{output.content}</pre>
+                        <div className={`prose prose-sm prose-invert max-w-none ${isExpanded ? '' : 'line-clamp-4'}`}>
+                          <ReactMarkdown>{output.content}</ReactMarkdown>
                         </div>
                         {output.latency_ms > 0 && (
                           <div className="mt-4 pt-3 border-t border-glass-border flex items-center gap-4 text-xs text-text-muted">
@@ -361,8 +362,8 @@ export function ReasoningPhase() {
                   )}
                   {model.status === 'succeeded' && content && (
                     <div className="p-4">
-                      <div className={`prose prose-sm max-w-none text-text-primary ${isExpanded ? '' : 'line-clamp-4'}`}>
-                        <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{content}</pre>
+                      <div className={`prose prose-sm prose-invert max-w-none ${isExpanded ? '' : 'line-clamp-4'}`}>
+                        <ReactMarkdown>{content}</ReactMarkdown>
                       </div>
                       {output?.latency_ms && (
                         <div className="mt-4 pt-3 border-t border-glass-border flex items-center gap-4 text-xs text-text-muted">

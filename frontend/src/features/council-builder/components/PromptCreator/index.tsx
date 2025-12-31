@@ -82,6 +82,7 @@ export function PromptCreator() {
         <TemplateSelector
           onSelect={handleTemplateSelect}
           onClose={() => setMode('freeform')}
+          onEnhanceComplete={handleEnhanceComplete}
         />
       )}
 

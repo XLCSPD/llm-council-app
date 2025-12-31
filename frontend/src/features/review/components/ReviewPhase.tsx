@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import {
   Loader2,
   CheckCircle2,
@@ -294,9 +295,9 @@ export function ReviewPhase() {
                   </span>
                 </div>
                 <div className="bg-bg-tertiary rounded-lg p-4">
-                  <p className="text-text-primary whitespace-pre-wrap">
-                    {selectedRationale.rationale}
-                  </p>
+                  <div className="prose prose-sm prose-invert max-w-none">
+                    <ReactMarkdown>{selectedRationale.rationale || ''}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
             </div>
@@ -512,9 +513,9 @@ export function ReviewPhase() {
                   <span className="text-xs text-text-muted">Review Output</span>
                 </div>
                 <div className="p-4">
-                  <pre className="whitespace-pre-wrap text-sm text-text-primary font-sans">
-                    {output.content}
-                  </pre>
+                  <div className="prose prose-sm prose-invert max-w-none">
+                    <ReactMarkdown>{output.content}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
             ))}
@@ -655,9 +656,9 @@ export function ReviewPhase() {
                 </GlowBadge>
               </div>
               <div className="glass-subtle rounded-xl p-4">
-                <p className="text-text-primary whitespace-pre-wrap leading-relaxed">
-                  {selectedRationale.rationale}
-                </p>
+                <div className="prose prose-sm prose-invert max-w-none">
+                  <ReactMarkdown>{selectedRationale.rationale || ''}</ReactMarkdown>
+                </div>
               </div>
             </div>
           </div>

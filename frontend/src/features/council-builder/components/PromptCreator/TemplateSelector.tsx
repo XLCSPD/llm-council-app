@@ -9,8 +9,10 @@ import {
   Grid,
   BarChart,
   X,
+  Loader2,
 } from 'lucide-react';
 import { PROMPT_TEMPLATES, TEMPLATE_CATEGORIES, fillTemplate, type PromptTemplate } from './templates';
+import { orchestratorApi, type PromptEnhanceResponse } from '@/api/orchestrator';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Scale,
@@ -26,12 +28,14 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 interface TemplateSelectorProps {
   onSelect: (template: PromptTemplate['template']) => void;
   onClose?: () => void;
+  onEnhanceComplete?: (result: PromptEnhanceResponse) => void;
 }
 
-export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
+export function TemplateSelector({ onSelect, onClose, onEnhanceComplete }: TemplateSelectorProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   const [placeholderValues, setPlaceholderValues] = useState<Record<string, string>>({});
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const filteredTemplates =
     selectedCategory === 'all'
@@ -59,6 +63,26 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
   const handleBack = () => {
     setSelectedTemplate(null);
     setPlaceholderValues({});
+  };
+
+  const handleEnhanceTemplate = async () => {
+    if (!selectedTemplate || !onEnhanceComplete) return;
+    const filled = fillTemplate(selectedTemplate, placeholderValues);
+    setIsEnhancing(true);
+    try {
+      const result = await orchestratorApi.enhancePrompt({
+        content: filled.content,
+        objective: filled.objective,
+        constraints: filled.constraints,
+        context: filled.context || undefined,
+        audience: filled.audience || undefined,
+      });
+      onEnhanceComplete(result);
+    } catch (error) {
+      console.error('Enhancement failed:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   // Template detail/customization view
@@ -131,14 +155,37 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
           </p>
         </div>
 
-        <button
-          onClick={handleApplyTemplate}
-          disabled={Object.values(placeholderValues).some((v) => !v.trim())}
-          className="w-full px-4 py-2.5 bg-accent text-white font-medium rounded-lg
-                   hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Use This Template
-        </button>
+        <div className="flex gap-2">
+          {onEnhanceComplete && (
+            <button
+              onClick={handleEnhanceTemplate}
+              disabled={Object.values(placeholderValues).some((v) => !v.trim()) || isEnhancing}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5
+                       border border-accent text-accent font-medium rounded-lg
+                       hover:bg-accent/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isEnhancing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Enhancing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Enhance with AI
+                </>
+              )}
+            </button>
+          )}
+          <button
+            onClick={handleApplyTemplate}
+            disabled={Object.values(placeholderValues).some((v) => !v.trim())}
+            className={`${onEnhanceComplete ? 'flex-1' : 'w-full'} px-4 py-2.5 bg-accent text-white font-medium rounded-lg
+                     hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+          >
+            Use This Template
+          </button>
+        </div>
       </div>
     );
   }
