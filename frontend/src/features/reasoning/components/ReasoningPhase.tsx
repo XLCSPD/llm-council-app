@@ -88,6 +88,11 @@ export function ReasoningPhase() {
           <ReplayModeIndicator />
         </div>
 
+        {/* Replay Navigation - visible at top for mobile accessibility */}
+        <div className="flex justify-center">
+          <ReplayPhaseNavigation />
+        </div>
+
         {/* Model Response Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {modelInfo.map((model) => {
@@ -162,10 +167,6 @@ export function ReasoningPhase() {
           })}
         </div>
 
-        {/* Replay Navigation */}
-        <div className="flex justify-center pt-4">
-          <ReplayPhaseNavigation />
-        </div>
       </div>
     );
   }

@@ -166,6 +166,11 @@ export function ReviewPhase() {
           </div>
         </div>
 
+        {/* Replay Navigation - visible at top for mobile accessibility */}
+        <div className="flex justify-center">
+          <ReplayPhaseNavigation />
+        </div>
+
         {/* No reviews message */}
         {replayPeerReviews.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 bg-bg-secondary rounded-lg border border-border">
@@ -254,11 +259,6 @@ export function ReviewPhase() {
             </div>
           </>
         )}
-
-        {/* Replay Navigation */}
-        <div className="flex justify-center pt-4">
-          <ReplayPhaseNavigation />
-        </div>
 
         {/* Rationale Modal */}
         {selectedRationale && (

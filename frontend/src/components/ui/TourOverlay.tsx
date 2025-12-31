@@ -156,20 +156,40 @@ export function TourOverlay() {
 
         {/* Spotlight highlight */}
         {spotlight && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute pointer-events-none"
-            style={{
-              top: spotlight.top,
-              left: spotlight.left,
-              width: spotlight.width,
-              height: spotlight.height,
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
-              borderRadius: '8px',
-              border: '2px solid var(--color-accent-primary)',
-            }}
-          />
+          <>
+            {/* Spotlight cutout with glow effect */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute pointer-events-none"
+              style={{
+                top: spotlight.top,
+                left: spotlight.left,
+                width: spotlight.width,
+                height: spotlight.height,
+                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.75)',
+                borderRadius: '8px',
+              }}
+            />
+            {/* Inner glow border for visibility in dark mode */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute pointer-events-none"
+              style={{
+                top: spotlight.top,
+                left: spotlight.left,
+                width: spotlight.width,
+                height: spotlight.height,
+                borderRadius: '8px',
+                border: '2px solid var(--color-accent-secondary)',
+                boxShadow: `
+                  0 0 20px 4px rgba(94, 234, 212, 0.4),
+                  inset 0 0 20px 4px rgba(94, 234, 212, 0.1)
+                `,
+              }}
+            />
+          </>
         )}
 
         {/* Tooltip card */}

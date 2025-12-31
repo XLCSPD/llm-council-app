@@ -261,6 +261,11 @@ export function SynthesisPhase() {
           <ReplayModeIndicator />
         </div>
 
+        {/* Replay Navigation - visible at top for mobile accessibility */}
+        <div className="flex justify-center">
+          <ReplayPhaseNavigation />
+        </div>
+
         {/* No synthesis message */}
         {!replaySynthesis && (
           <div className="flex flex-col items-center justify-center py-16 bg-bg-secondary rounded-lg border border-border">
@@ -422,10 +427,6 @@ export function SynthesisPhase() {
           </div>
         )}
 
-        {/* Replay Navigation */}
-        <div className="flex justify-center pt-4">
-          <ReplayPhaseNavigation />
-        </div>
       </div>
     );
   }

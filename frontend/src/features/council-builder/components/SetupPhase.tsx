@@ -44,6 +44,11 @@ export function SetupPhase() {
           <ReplayModeIndicator />
         </div>
 
+        {/* Replay Navigation - visible at top for mobile accessibility */}
+        <div className="flex justify-center">
+          <ReplayPhaseNavigation />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Prompt (read-only) */}
           <div className="space-y-4">
@@ -139,10 +144,6 @@ export function SetupPhase() {
           </div>
         </div>
 
-        {/* Replay Navigation */}
-        <div className="flex justify-center pt-4">
-          <ReplayPhaseNavigation />
-        </div>
       </div>
     );
   }
