@@ -1,11 +1,19 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, CheckCircle2, XCircle, Clock, ChevronRight, Brain } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Clock, ChevronRight, Brain, Timer, Zap, TrendingUp } from 'lucide-react';
 import { useSessionStore, useCouncilStore } from '@/store';
 import { orchestratorApi } from '@/api/orchestrator';
 import { useRealtimeRunStatus, useReplayMode } from '@/hooks';
 import { ReplayModeIndicator, ReplayPhaseNavigation } from '@/components/replay';
 import { GlassCard, GradientButton, GlowBadge } from '@/components/ui';
+
+interface ModelOutput {
+  id: string;
+  phase: number;
+  content: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
 
 interface ModelResponse {
   id: string;
@@ -13,7 +21,7 @@ interface ModelResponse {
   display_name: string;
   role: string;
   status: 'pending' | 'running' | 'succeeded' | 'failed';
-  content?: string;
+  outputs?: ModelOutput[];
   latency_ms?: number;
 }
 
@@ -183,13 +191,14 @@ export function ReasoningPhase() {
 
       // Store responses in session store
       data.models?.forEach((model: ModelResponse) => {
-        if (model.status === 'succeeded' && model.content) {
+        const reasoningOutput = model.outputs?.find((o: ModelOutput) => o.phase === 2);
+        if (model.status === 'succeeded' && reasoningOutput?.content) {
           addReasoningResponse(model.id, {
             id: model.id,
             member_id: model.id,
             model_id: model.model_key,
             role: model.role as 'thinker' | 'critic' | 'devils_advocate' | 'synthesizer',
-            content: model.content,
+            content: reasoningOutput.content,
             token_count: 0,
             latency_ms: model.latency_ms || 0,
             created_at: new Date().toISOString(),
@@ -292,13 +301,74 @@ export function ReasoningPhase() {
         </GlassCard>
       )}
 
+      {/* Timing Stats Section */}
+      {(() => {
+        const completedModels = runData?.models?.filter(m => m.status === 'succeeded' && m.latency_ms) || [];
+        if (completedModels.length === 0) return null;
+
+        const latencies = completedModels.map(m => m.latency_ms!);
+        const totalTime = Math.max(...latencies); // Parallel execution = slowest determines total
+        const avgTime = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+        const fastest = completedModels.reduce((a, b) => (a.latency_ms! < b.latency_ms! ? a : b));
+        const slowest = completedModels.reduce((a, b) => (a.latency_ms! > b.latency_ms! ? a : b));
+
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <GlassCard variant="subtle" padding="md" className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Timer className="w-4 h-4 text-accent" />
+                <span className="text-xs text-text-muted uppercase tracking-wide">Total Time</span>
+              </div>
+              <div className="text-2xl font-bold font-display text-gradient">
+                {(totalTime / 1000).toFixed(1)}s
+              </div>
+            </GlassCard>
+            <GlassCard variant="subtle" padding="md" className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-text-secondary" />
+                <span className="text-xs text-text-muted uppercase tracking-wide">Avg Time</span>
+              </div>
+              <div className="text-2xl font-bold font-display text-text-primary">
+                {(avgTime / 1000).toFixed(1)}s
+              </div>
+            </GlassCard>
+            <GlassCard variant="subtle" padding="md" className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Zap className="w-4 h-4 text-accent-success" />
+                <span className="text-xs text-text-muted uppercase tracking-wide">Fastest</span>
+              </div>
+              <div className="text-2xl font-bold font-display text-accent-success">
+                {(fastest.latency_ms! / 1000).toFixed(1)}s
+              </div>
+              <div className="text-xs text-text-muted mt-1 truncate" title={fastest.display_name}>
+                {fastest.display_name}
+              </div>
+            </GlassCard>
+            <GlassCard variant="subtle" padding="md" className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-accent-secondary" />
+                <span className="text-xs text-text-muted uppercase tracking-wide">Slowest</span>
+              </div>
+              <div className="text-2xl font-bold font-display text-accent-secondary">
+                {(slowest.latency_ms! / 1000).toFixed(1)}s
+              </div>
+              <div className="text-xs text-text-muted mt-1 truncate" title={slowest.display_name}>
+                {slowest.display_name}
+              </div>
+            </GlassCard>
+          </div>
+        );
+      })()}
+
       {/* Model Response Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {models.map((model) => {
           const StatusIcon = statusIcons[model.status];
           const isExpanded = expandedCard === model.id;
-          const output = runData?.models?.find(m => m.id === model.id);
-          const content = output?.content || '';
+          const modelData = runData?.models?.find(m => m.id === model.id);
+          // Get phase 2 (reasoning) output content
+          const reasoningOutput = modelData?.outputs?.find(o => o.phase === 2);
+          const content = reasoningOutput?.content || '';
           const isRunning = model.status === 'running';
 
           return (
@@ -365,11 +435,11 @@ export function ReasoningPhase() {
                       <div className={`prose prose-sm prose-invert max-w-none ${isExpanded ? '' : 'line-clamp-4'}`}>
                         <ReactMarkdown>{content}</ReactMarkdown>
                       </div>
-                      {output?.latency_ms && (
+                      {modelData?.latency_ms && (
                         <div className="mt-4 pt-3 border-t border-glass-border flex items-center gap-4 text-xs text-text-muted">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {(output.latency_ms / 1000).toFixed(2)}s
+                            {(modelData.latency_ms / 1000).toFixed(2)}s
                           </span>
                         </div>
                       )}

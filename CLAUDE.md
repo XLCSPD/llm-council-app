@@ -27,7 +27,7 @@ LLM Council is a multi-agent AI deliberation platform that assembles configurabl
 - Zustand for state management
 - Tailwind CSS with CSS variables for theming
 - Supabase Realtime subscriptions for live updates during runs
-- Feature-based organization in `features/` (council-builder, reasoning, review, synthesis, settings, pdf-export)
+- Feature-based organization in `features/` (council-builder, help, pdf-export, peer-review, prompt-editor, reasoning, review, session, settings, synthesis)
 - Path alias: `@/*` maps to `src/*`
 
 ### Orchestrator (`orchestrator/`)
@@ -146,6 +146,7 @@ The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to
 
 ### Database
 - `supabase/migrations/001_initial_schema.sql` - Full schema with RLS policies
+- `supabase/migrations/20241228_setup_user_workspace.sql` - User workspace setup (auto-creates org/project on first login)
 
 ## API Endpoints
 
@@ -154,6 +155,7 @@ The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to
 - `POST /api/runs` - Create and start a deliberation run (requires `X-User-ID` header)
 - `GET /api/runs/{run_id}` - Get run status and results
 - `POST /api/runs/{run_id}/cancel` - Cancel a running deliberation
+- `POST /api/prompts/enhance` - AI-powered prompt enhancement (improves prompt clarity, suggests objectives/constraints)
 
 ## Notes
 

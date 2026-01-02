@@ -294,9 +294,9 @@ export function ReviewPhase() {
                     {selectedRationale.score}/10
                   </span>
                 </div>
-                <div className="bg-bg-tertiary rounded-lg p-4">
-                  <div className="prose prose-sm prose-invert max-w-none">
-                    <ReactMarkdown>{selectedRationale.rationale || ''}</ReactMarkdown>
+                <div className="bg-bg-tertiary/80 rounded-lg p-4 border border-border">
+                  <div className="prose prose-sm prose-invert max-w-none text-text-primary [&>*]:text-text-primary [&_p]:text-text-primary [&_li]:text-text-primary [&_strong]:text-text-primary [&_em]:text-text-secondary">
+                    <ReactMarkdown>{selectedRationale.rationale || 'No rationale provided.'}</ReactMarkdown>
                   </div>
                 </div>
               </div>
@@ -655,9 +655,9 @@ export function ReviewPhase() {
                   {selectedRationale.score}/10
                 </GlowBadge>
               </div>
-              <div className="glass-subtle rounded-xl p-4">
-                <div className="prose prose-sm prose-invert max-w-none">
-                  <ReactMarkdown>{selectedRationale.rationale || ''}</ReactMarkdown>
+              <div className="bg-bg-tertiary/80 rounded-xl p-4 border border-glass-border">
+                <div className="prose prose-sm prose-invert max-w-none text-text-primary [&>*]:text-text-primary [&_p]:text-text-primary [&_li]:text-text-primary [&_strong]:text-text-primary [&_em]:text-text-secondary">
+                  <ReactMarkdown>{selectedRationale.rationale || 'No rationale provided.'}</ReactMarkdown>
                 </div>
               </div>
             </div>

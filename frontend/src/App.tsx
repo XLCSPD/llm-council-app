@@ -114,9 +114,16 @@ function AppContent() {
     [loadSessionForReplay]
   );
 
-  // First-time user tour detection
+  // First-time user tour detection - waits for localStorage hydration
+  const hasHydrated = useHelpStore((state) => state._hasHydrated);
+  const tourCompleted = useHelpStore((state) => state.tourCompleted);
+  const tourDismissed = useHelpStore((state) => state.tourDismissed);
+  const startTour = useHelpStore((state) => state.startTour);
+
   useEffect(() => {
-    const { tourCompleted, tourDismissed, startTour } = useHelpStore.getState();
+    // Wait for hydration to complete before checking tour status
+    if (!hasHydrated) return;
+
     // Show tour for first-time users after a short delay
     if (!tourCompleted && !tourDismissed && user) {
       const timer = setTimeout(() => {
@@ -124,7 +131,7 @@ function AppContent() {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [user]);
+  }, [user, hasHydrated, tourCompleted, tourDismissed, startTour]);
 
   // Render the appropriate phase component or settings/help
   const renderPhase = () => {

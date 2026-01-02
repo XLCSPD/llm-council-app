@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Loader2, Plus, X } from 'lucide-react';
+import { Sparkles, Loader2, Plus, X, Trash2 } from 'lucide-react';
 import { useSessionStore } from '@/store';
 import { orchestratorApi, type PromptEnhanceResponse } from '@/api/orchestrator';
 
@@ -9,10 +9,20 @@ interface FreeformEditorProps {
 }
 
 export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEditorProps) {
-  const { prompt, updatePrompt } = useSessionStore();
+  const { prompt, updatePrompt, resetPrompt } = useSessionStore();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
   const [newConstraint, setNewConstraint] = useState('');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Check if prompt has any content
+  const hasContent = prompt.content.trim() || prompt.objective || prompt.audience ||
+                     prompt.context || prompt.constraints.length > 0;
+
+  const handleClearPrompt = () => {
+    resetPrompt();
+    setShowClearConfirm(false);
+  };
 
   const handleEnhance = async () => {
     if (!prompt.content.trim()) return;
@@ -46,26 +56,59 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
           <label className="block text-sm font-medium text-text-secondary">
             Your Question or Task
           </label>
-          <button
-            data-tour="enhance-button"
-            onClick={handleEnhance}
-            disabled={!prompt.content.trim() || isEnhancing}
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full
-                     bg-accent/10 text-accent hover:bg-accent/20
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isEnhancing ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Enhancing...
-              </>
+          <div className="flex items-center gap-2">
+            {/* Clear button with confirmation */}
+            {showClearConfirm ? (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20">
+                <span className="text-xs text-red-400">Clear all?</span>
+                <button
+                  onClick={handleClearPrompt}
+                  className="px-2 py-0.5 text-xs font-medium rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-2 py-0.5 text-xs font-medium rounded bg-bg-tertiary text-text-secondary hover:bg-bg-secondary transition-colors"
+                >
+                  No
+                </button>
+              </div>
             ) : (
-              <>
-                <Sparkles className="w-3 h-3" />
-                Enhance with AI
-              </>
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                disabled={!hasContent}
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full
+                         bg-bg-tertiary text-text-secondary hover:bg-red-500/10 hover:text-red-400
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Clear all fields"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear
+              </button>
             )}
-          </button>
+            {/* Enhance button */}
+            <button
+              data-tour="enhance-button"
+              onClick={handleEnhance}
+              disabled={!prompt.content.trim() || isEnhancing}
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full
+                       bg-accent/10 text-accent hover:bg-accent/20
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isEnhancing ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Enhancing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3 h-3" />
+                  Enhance with AI
+                </>
+              )}
+            </button>
+          </div>
         </div>
         <textarea
           data-tour="prompt-input"

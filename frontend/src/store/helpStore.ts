@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface HelpState {
+  // Hydration tracking - ensures we don't show tour before localStorage loads
+  _hasHydrated: boolean;
+
   // Tour state
   tourCompleted: boolean;
   tourActive: boolean;
@@ -12,6 +15,7 @@ interface HelpState {
   activeSection: string;
 
   // Actions
+  setHasHydrated: (state: boolean) => void;
   startTour: () => void;
   nextStep: () => void;
   previousStep: () => void;
@@ -24,12 +28,18 @@ interface HelpState {
 export const useHelpStore = create<HelpState>()(
   persist(
     (set, get) => ({
+      // Hydration state - starts false, set true after localStorage loads
+      _hasHydrated: false,
+
       // Initial state
       tourCompleted: false,
       tourActive: false,
       currentTourStep: 0,
       tourDismissed: false,
       activeSection: 'getting-started',
+
+      // Set hydration state
+      setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
 
       // Start the guided tour
       startTour: () => set({ tourActive: true, currentTourStep: 0 }),
@@ -79,6 +89,10 @@ export const useHelpStore = create<HelpState>()(
         tourCompleted: state.tourCompleted,
         tourDismissed: state.tourDismissed,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Called after state is hydrated from localStorage
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
