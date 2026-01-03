@@ -10,6 +10,17 @@ const orchestratorClient = axios.create({
   },
 });
 
+export interface PromptAttachmentRequest {
+  id: string;
+  type: 'image' | 'pdf' | 'text';
+  filename: string;
+  storage_path: string;
+  public_url: string;
+  mime_type: string;
+  size_bytes: number;
+  extracted_text?: string;
+}
+
 export interface RunCreateRequest {
   session_id: string;
   prompt: {
@@ -18,6 +29,7 @@ export interface RunCreateRequest {
     constraints?: string[];
     audience?: string | null;
     context?: string | null;
+    attachments?: PromptAttachmentRequest[];
   };
   council: {
     members: Array<{

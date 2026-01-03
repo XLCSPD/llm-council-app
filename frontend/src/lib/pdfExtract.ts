@@ -172,11 +172,12 @@ async function extractWithOcr(
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Render PDF page to canvas (removed invalid 'canvas' property)
+      // Render PDF page to canvas
       console.log(`[OCR] Rendering page ${pageNum} to canvas (${canvas.width}x${canvas.height})`);
       await page.render({
         canvasContext: ctx,
         viewport: viewport,
+        canvas: canvas,
       }).promise;
       console.log(`[OCR] Page ${pageNum} rendered successfully`);
 
