@@ -1,5 +1,6 @@
 import { Moon, Sun, User, LogOut } from 'lucide-react';
 import { useUIStore, useAuthStore, useSessionStore } from '@/store';
+import { useReplayMode } from '@/hooks';
 import type { PhaseType } from '@/types';
 
 const phases: { key: PhaseType; label: string; icon: string }[] = [
@@ -13,6 +14,7 @@ export function FloatingHeader() {
   const { theme, toggleTheme } = useUIStore();
   const { user, signOut } = useAuthStore();
   const { currentPhase, currentSession, setCurrentPhase } = useSessionStore();
+  const { isReplayMode, navigateToPhase } = useReplayMode();
 
   const getPhaseStatus = (phase: PhaseType): 'completed' | 'current' | 'pending' => {
     if (!currentSession) {
@@ -54,17 +56,20 @@ export function FloatingHeader() {
               <button
                 key={phase.key}
                 onClick={() => {
-                  if (status !== 'pending') {
+                  if (isReplayMode) {
+                    // In replay mode, all phases are clickable
+                    navigateToPhase(phase.key);
+                  } else if (status !== 'pending') {
                     setCurrentPhase(phase.key);
                   }
                 }}
-                disabled={status === 'pending'}
+                disabled={!isReplayMode && status === 'pending'}
                 className={`
                   relative flex items-center gap-2 px-4 py-2 rounded-lg
                   font-medium text-sm transition-all duration-200
                   ${status === 'current'
                     ? 'bg-gradient-accent text-white shadow-glow-teal'
-                    : status === 'completed'
+                    : status === 'completed' || isReplayMode
                     ? 'text-accent-secondary hover:bg-bg-tertiary cursor-pointer'
                     : 'text-text-muted cursor-not-allowed'
                   }
@@ -77,6 +82,8 @@ export function FloatingHeader() {
                       ? 'bg-white/20 text-white'
                       : status === 'completed'
                       ? 'bg-accent-success/20 text-accent-success'
+                      : isReplayMode
+                      ? 'bg-accent-secondary/20 text-accent-secondary'
                       : 'bg-bg-tertiary text-text-muted'
                     }
                   `}

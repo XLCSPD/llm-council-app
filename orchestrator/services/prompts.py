@@ -1,6 +1,6 @@
 """System prompts for different council member roles."""
 
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union, Any
 
 ROLE_SYSTEM_PROMPTS = {
     "thinker": """You are a thoughtful analyst participating in a council deliberation.
@@ -52,26 +52,96 @@ def build_reasoning_prompt(
     constraints: Optional[List[str]] = None,
     audience: Optional[str] = None,
     context: Optional[str] = None,
+    attachments: Optional[List[Dict[str, Any]]] = None,
+    supports_vision: bool = False,
 ) -> List[Dict]:
-    """Build the messages for the reasoning phase."""
+    """Build the messages for the reasoning phase.
+
+    Args:
+        user_prompt: The main question/task content
+        role: The council member role (thinker, critic, devils_advocate, chair)
+        objective: Optional objective for the task
+        constraints: Optional list of constraints
+        audience: Optional target audience
+        context: Optional additional context
+        attachments: Optional list of attachments with type, filename, public_url, etc.
+        supports_vision: Whether the model supports vision/multimodal input
+
+    Returns:
+        List of message dicts for the LLM API
+    """
     system_prompt = ROLE_SYSTEM_PROMPTS.get(role, ROLE_SYSTEM_PROMPTS["thinker"])
 
-    user_content = f"## Question\n{user_prompt}\n"
+    user_text = f"## Question\n{user_prompt}\n"
 
     if objective:
-        user_content += f"\n## Objective\n{objective}\n"
+        user_text += f"\n## Objective\n{objective}\n"
     if audience:
-        user_content += f"\n## Target Audience\n{audience}\n"
+        user_text += f"\n## Target Audience\n{audience}\n"
     if context:
-        user_content += f"\n## Additional Context\n{context}\n"
+        user_text += f"\n## Additional Context\n{context}\n"
     if constraints:
-        user_content += f"\n## Constraints\n" + "\n".join(f"- {c}" for c in constraints) + "\n"
+        user_text += f"\n## Constraints\n" + "\n".join(f"- {c}" for c in constraints) + "\n"
 
-    user_content += "\nPlease provide your analysis."
+    # Handle attachments
+    if attachments and len(attachments) > 0:
+        # Separate images from text-based files - only images can be sent as image_url
+        images = [att for att in attachments if att.get("type") == "image"]
+        text_files = [att for att in attachments if att.get("type") in ("pdf", "text")]
+
+        if supports_vision and images:
+            # For vision-capable models with images, use multimodal content
+            user_text += "\n## Attachments\nPlease analyze the attached files as part of your response.\n"
+
+            # Add text-based files (PDFs, .txt, .md) as text content
+            if text_files:
+                user_text += "\n### Text Documents\n"
+                for doc in text_files:
+                    filename = doc.get('filename', 'document')
+                    if doc.get("extracted_text"):
+                        text = doc["extracted_text"]
+                        # Include up to 15000 chars of extracted text
+                        user_text += f"\n**{filename}** (content):\n{text[:15000]}{'...[truncated]' if len(text) > 15000 else ''}\n"
+                    else:
+                        user_text += f"- {filename} (no text could be extracted)\n"
+
+            user_text += "\nPlease provide your analysis."
+
+            # Build multimodal content array
+            content_parts: List[Dict[str, Any]] = [{"type": "text", "text": user_text}]
+
+            # Only add actual images as image_url
+            for img in images:
+                content_parts.append({
+                    "type": "image_url",
+                    "image_url": {"url": img["public_url"]}
+                })
+
+            return [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": content_parts},
+            ]
+        else:
+            # For non-vision models or PDFs-only, include text descriptions
+            user_text += "\n## Attached Files\n"
+            if not supports_vision:
+                user_text += "Note: This model cannot view images directly.\n"
+
+            for att in attachments:
+                att_type = att.get("type", "file")
+                filename = att.get("filename", "unknown")
+                if att.get("extracted_text"):
+                    text = att["extracted_text"]
+                    # Include up to 15000 chars of extracted text
+                    user_text += f"\n**{filename}** ({att_type}, extracted text):\n{text[:15000]}{'...[truncated]' if len(text) > 15000 else ''}\n"
+                else:
+                    user_text += f"- {att_type.upper()}: {filename} (no text could be extracted)\n"
+
+    user_text += "\nPlease provide your analysis."
 
     return [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_content},
+        {"role": "user", "content": user_text},
     ]
 
 

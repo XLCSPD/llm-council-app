@@ -53,7 +53,8 @@ interface ReplayPhaseNavigationProps {
 
 /**
  * Phase navigation for replay mode.
- * Shows all phases with visual indication of which have data.
+ * All phases are always clickable in replay mode so users can review any phase.
+ * Visual indicators show which phases have data vs which failed/have no data.
  */
 export function ReplayPhaseNavigation({ className = '' }: ReplayPhaseNavigationProps) {
   const currentPhase = useSessionStore((state) => state.currentPhase);
@@ -79,26 +80,28 @@ export function ReplayPhaseNavigation({ className = '' }: ReplayPhaseNavigationP
       {phases.map((phase, index) => {
         const isActive = currentPhase === phase.id;
         const hasData = phaseHasData(phase.id);
-        const isClickable = hasData;
 
         return (
           <button
             key={phase.id}
-            onClick={() => isClickable && navigateToPhase(phase.id)}
-            disabled={!isClickable}
+            onClick={() => navigateToPhase(phase.id)}
             className={`
-              flex items-center gap-2 px-3 py-2 rounded-md transition-all
+              flex items-center gap-2 px-3 py-2 rounded-md transition-all cursor-pointer
               ${isActive
                 ? 'bg-bg-tertiary text-text-primary shadow-sm'
                 : hasData
                   ? 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50'
-                  : 'text-text-muted cursor-not-allowed opacity-50'
+                  : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary/30'
               }
             `}
-            title={hasData ? `View ${phase.label}` : `No ${phase.label.toLowerCase()} data`}
+            title={hasData ? `View ${phase.label}` : `View ${phase.label} (no data)`}
           >
-            <span className={isActive ? 'text-accent-primary' : ''}>{phase.icon}</span>
-            <span className="text-sm font-medium hidden sm:inline">{phase.label}</span>
+            <span className={`${isActive ? 'text-accent-primary' : ''} ${!hasData && !isActive ? 'opacity-60' : ''}`}>
+              {phase.icon}
+            </span>
+            <span className={`text-sm font-medium hidden sm:inline ${!hasData && !isActive ? 'opacity-60' : ''}`}>
+              {phase.label}
+            </span>
             {index < phases.length - 1 && (
               <svg
                 className="w-4 h-4 text-text-muted ml-1 hidden sm:block"

@@ -5,8 +5,9 @@ import { useReplayMode } from '@/hooks';
 import { supabase } from '@/lib/supabase';
 import { orchestratorApi } from '@/api/orchestrator';
 import { ReplayModeIndicator, ReplayPhaseNavigation } from '@/components/replay';
-import { GlassCard, GradientButton, GlowBadge, AIOrb } from '@/components/ui';
+import { GlassCard, GradientButton, GlowBadge, AIOrb, ModelTooltip } from '@/components/ui';
 import { PromptCreator } from './PromptCreator';
+import { getModelDescription } from '@/features/help/content/modelDescriptions';
 import type { RoleType } from '@/types';
 
 const roleLabels: Record<RoleType, string> = {
@@ -211,6 +212,16 @@ export function SetupPhase() {
             constraints: prompt.constraints || [],
             audience: prompt.audience,
             context: prompt.context,
+            attachments: prompt.attachments.map((att) => ({
+              id: att.id,
+              type: att.type,
+              filename: att.filename,
+              storage_path: att.storage_path,
+              public_url: att.public_url,
+              mime_type: att.mime_type,
+              size_bytes: att.size_bytes,
+              extracted_text: att.extracted_text,
+            })),
           },
           council: {
             members: selectedModels.map((m) => ({
@@ -287,28 +298,38 @@ export function SetupPhase() {
             {showModelSelector && (
               <GlassCard variant="subtle" padding="md" className="mb-4 animate-fade-in">
                 <div className="text-sm font-medium text-text-secondary mb-3">Select a model to add:</div>
-                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                  {availableModels.map((model) => (
-                    <button
-                      key={model.id}
-                      onClick={() => {
-                        addModel(model);
-                        setShowModelSelector(false);
-                      }}
-                      className="flex items-center justify-between p-3 rounded-xl glass-subtle
-                               hover:bg-accent/10 hover:border-accent transition-all text-left group"
-                    >
-                      <div>
-                        <div className="text-sm font-medium text-text-primary group-hover:text-accent-secondary transition-colors">
-                          {model.display_name}
+                <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-1">
+                  {availableModels.map((model) => {
+                    const description = getModelDescription(model.id);
+                    return (
+                      <button
+                        key={model.id}
+                        onClick={() => {
+                          addModel(model);
+                          setShowModelSelector(false);
+                        }}
+                        className="flex flex-col p-3 rounded-xl glass-subtle
+                                 hover:bg-accent/10 hover:border-accent transition-all text-left group w-full"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div>
+                            <div className="text-sm font-medium text-text-primary group-hover:text-accent-secondary transition-colors">
+                              {model.display_name}
+                            </div>
+                            <div className="text-xs text-text-muted">{model.provider}</div>
+                          </div>
+                          <div className="text-xs text-text-muted">
+                            ${model.cost_per_1k_output.toFixed(4)}/1k
+                          </div>
                         </div>
-                        <div className="text-xs text-text-muted">{model.provider}</div>
-                      </div>
-                      <div className="text-xs text-text-muted">
-                        ${model.cost_per_1k_output.toFixed(4)}/1k
-                      </div>
-                    </button>
-                  ))}
+                        {description && (
+                          <div className="mt-2 text-xs text-text-secondary leading-relaxed">
+                            {description.tagline}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </GlassCard>
             )}
@@ -334,9 +355,11 @@ export function SetupPhase() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <span className="font-medium text-text-primary">
-                          {member.display_name || member.model_id}
-                        </span>
+                        <ModelTooltip modelId={member.model_id} position="top">
+                          <span className="font-medium text-text-primary cursor-help">
+                            {member.display_name || member.model_id}
+                          </span>
+                        </ModelTooltip>
                         <GlowBadge
                           variant={
                             member.role === 'thinker' ? 'thinker' :

@@ -32,6 +32,19 @@ export interface Council {
   is_template: boolean;
 }
 
+// Prompt attachment
+export interface PromptAttachment {
+  id: string;
+  type: 'image' | 'pdf' | 'text';
+  filename: string;
+  storage_path: string;
+  public_url: string;
+  mime_type: string;
+  size_bytes: number;
+  /** For PDFs and text files: extracted/read text content */
+  extracted_text?: string;
+}
+
 // Prompt configuration
 export interface PromptConfig {
   content: string;
@@ -39,6 +52,7 @@ export interface PromptConfig {
   constraints: string[];
   audience: string | null;
   context: string | null;
+  attachments: PromptAttachment[];
 }
 
 // Phase record
@@ -84,6 +98,8 @@ export interface ModelInfo {
   cost_per_1k_output: number;
   supports_streaming: boolean;
   recommended_roles: RoleType[];
+  /** Whether this model supports vision/image inputs */
+  supports_vision?: boolean;
 }
 
 // Model output
