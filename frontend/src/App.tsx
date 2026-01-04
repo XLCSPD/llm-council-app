@@ -1,6 +1,6 @@
 import { useEffect, useCallback, lazy, Suspense } from 'react';
 import { MainLayout } from '@/components/layout';
-import { AuthGuard, ResetPasswordPage } from '@/components/auth';
+import { AuthGuard, AuthCallbackPage, ResetPasswordPage } from '@/components/auth';
 import { TourOverlay } from '@/components/ui';
 import { useSessionStore, useCouncilStore, useAuthStore, useUIStore, useHelpStore } from '@/store';
 import { modelsApi } from '@/api';
@@ -237,6 +237,13 @@ function App() {
 
   if (isResetPasswordPage) {
     return <ResetPasswordPage />;
+  }
+
+  // Check if we're on the auth callback page (email confirmation, magic link)
+  const isAuthCallbackPage = window.location.pathname === '/auth/callback';
+
+  if (isAuthCallbackPage) {
+    return <AuthCallbackPage />;
   }
 
   return (
