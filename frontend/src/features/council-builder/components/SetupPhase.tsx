@@ -1,14 +1,74 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Play, Plus, Trash2, ChevronDown, Brain } from 'lucide-react';
 import { useSessionStore, useCouncilStore, useAuthStore } from '@/store';
 import { useReplayMode } from '@/hooks';
 import { supabase } from '@/lib/supabase';
 import { orchestratorApi } from '@/api/orchestrator';
 import { ReplayModeIndicator, ReplayPhaseNavigation } from '@/components/replay';
-import { GlassCard, GradientButton, GlowBadge, AIOrb, ModelTooltip } from '@/components/ui';
+import { GlassCard, GradientButton, GlowBadge, AIOrb, ModelTooltip, ModelSearchInput } from '@/components/ui';
 import { PromptCreator } from './PromptCreator';
-import { getModelDescription } from '@/features/help/content/modelDescriptions';
+import { getModelDescription, modelDescriptions } from '@/features/help/content/modelDescriptions';
 import type { RoleType, ModelInfo, ModelTier } from '@/types';
+
+// Search result interface with match context
+interface SearchResult {
+  model: ModelInfo;
+  score: number;
+  matchedField: string;
+}
+
+// Smart search function with weighted scoring
+function searchModels(models: ModelInfo[], query: string): SearchResult[] {
+  const q = query.toLowerCase().trim();
+  if (!q || q.length < 2) return [];
+
+  return models
+    .map(model => {
+      let score = 0;
+      let matchedField = '';
+      const desc = modelDescriptions[model.id];
+
+      // Weighted scoring with field tracking (highest match wins)
+      if (model.display_name.toLowerCase().includes(q)) {
+        score += 10;
+        matchedField = 'name';
+      }
+      if (model.provider.toLowerCase().includes(q)) {
+        score += 8;
+        if (!matchedField) matchedField = 'provider';
+      }
+      if (model.tier?.toLowerCase().includes(q)) {
+        score += 7;
+        if (!matchedField) matchedField = 'tier';
+      }
+      if (desc?.tagline.toLowerCase().includes(q)) {
+        score += 6;
+        if (!matchedField) matchedField = 'description';
+      }
+      if (desc?.bestFor?.some(b => b.toLowerCase().includes(q))) {
+        score += 5;
+        if (!matchedField) matchedField = 'use case';
+      }
+
+      // Special keywords
+      if ((q === 'vision' || q === 'image') && model.supports_vision) {
+        score += 10;
+        matchedField = 'capability';
+      }
+      if ((q === 'cheap' || q === 'affordable' || q === 'budget') && model.cost_per_1k_output < 0.001) {
+        score += 10;
+        matchedField = 'cost';
+      }
+      if ((q === 'fast' || q === 'quick' || q === 'speed') && model.tier === 'fast') {
+        score += 8;
+        matchedField = 'tier';
+      }
+
+      return { model, score, matchedField };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score);
+}
 
 const roleLabels: Record<RoleType, string> = {
   thinker: 'Thinker',
@@ -44,6 +104,57 @@ export function SetupPhase() {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+
+  // Search results - null means show grouped view
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      return null;
+    }
+    return searchModels(availableModels, searchQuery);
+  }, [searchQuery, availableModels]);
+
+  // Reset highlight when results change
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [searchResults]);
+
+  // Keyboard navigation handler
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!searchResults?.length) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(i => Math.min(i + 1, searchResults.length - 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(i => Math.max(i - 1, 0));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        const selected = searchResults[highlightedIndex];
+        if (selected) {
+          addModel(selected.model);
+          setSearchQuery('');
+          setShowModelSelector(false);
+        }
+        break;
+    }
+  };
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (searchResultsRef.current && searchResults?.length) {
+      const highlightedEl = searchResultsRef.current.querySelector(`[data-index="${highlightedIndex}"]`);
+      highlightedEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [highlightedIndex, searchResults]);
 
   // Group models by tier for organized display
   const groupedModels = useMemo(() => {
@@ -327,60 +438,143 @@ export function SetupPhase() {
             {showModelSelector && (
               <GlassCard variant="subtle" padding="md" className="mb-4 animate-fade-in">
                 <div className="text-sm font-medium text-text-secondary mb-3">Select a model to add:</div>
-                <div className="max-h-80 overflow-y-auto pr-1 space-y-4">
-                  {tierOrder.map((tier) => {
-                    const models = groupedModels[tier];
-                    if (!models?.length) return null;
 
-                    return (
-                      <div key={tier}>
-                        {/* Tier Section Header */}
-                        <div className="flex items-center gap-2 mb-2 sticky top-0 bg-bg-secondary/95 backdrop-blur-sm py-1.5 -mx-1 px-1 z-10">
-                          <GlowBadge variant={tierBadgeVariants[tier]} size="sm">
-                            {tierLabels[tier]}
-                          </GlowBadge>
-                          <span className="text-xs text-text-muted">
-                            {models.length} model{models.length > 1 ? 's' : ''}
-                          </span>
-                        </div>
+                {/* Smart Search Input */}
+                <ModelSearchInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search models..."
+                  className="mb-4"
+                />
 
-                        {/* Models in this tier */}
-                        <div className="grid grid-cols-1 gap-2">
-                          {models.map((model) => {
-                            const description = getModelDescription(model.id);
-                            return (
-                              <button
-                                key={model.id}
-                                onClick={() => {
-                                  addModel(model);
-                                  setShowModelSelector(false);
-                                }}
-                                className="flex flex-col p-3 rounded-xl glass-subtle
-                                         hover:bg-accent/10 hover:border-accent transition-all text-left group w-full"
-                              >
-                                <div className="flex items-center justify-between w-full">
-                                  <div>
-                                    <div className="text-sm font-medium text-text-primary group-hover:text-accent-secondary transition-colors">
-                                      {model.display_name}
-                                    </div>
-                                    <div className="text-xs text-text-muted">{model.provider}</div>
+                <div ref={searchResultsRef} className="max-h-80 overflow-y-auto pr-1 space-y-4">
+                  {/* Search Results View */}
+                  {searchResults !== null ? (
+                    searchResults.length > 0 ? (
+                      <div className="space-y-2">
+                        {searchResults.map((result, index) => {
+                          const description = getModelDescription(result.model.id);
+                          const isHighlighted = index === highlightedIndex;
+                          return (
+                            <button
+                              key={result.model.id}
+                              data-index={index}
+                              onClick={() => {
+                                addModel(result.model);
+                                setSearchQuery('');
+                                setShowModelSelector(false);
+                              }}
+                              className={`flex flex-col p-3 rounded-xl transition-all text-left group w-full ${
+                                isHighlighted
+                                  ? 'bg-accent/20 ring-1 ring-accent/30'
+                                  : 'glass-subtle hover:bg-accent/10'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <div>
+                                  <div className={`text-sm font-medium transition-colors ${
+                                    isHighlighted ? 'text-accent-secondary' : 'text-text-primary group-hover:text-accent-secondary'
+                                  }`}>
+                                    {result.model.display_name}
                                   </div>
-                                  <div className="text-xs text-text-muted">
-                                    ${model.cost_per_1k_output.toFixed(4)}/1k
-                                  </div>
+                                  <div className="text-xs text-text-muted">{result.model.provider}</div>
                                 </div>
-                                {description && (
-                                  <div className="mt-2 text-xs text-text-secondary leading-relaxed">
-                                    {description.tagline}
-                                  </div>
-                                )}
-                              </button>
-                            );
-                          })}
+                                <div className="text-xs text-text-muted">
+                                  ${result.model.cost_per_1k_output.toFixed(4)}/1k
+                                </div>
+                              </div>
+                              {description && (
+                                <div className="mt-2 text-xs text-text-secondary leading-relaxed">
+                                  {description.tagline}
+                                </div>
+                              )}
+                              {/* Match context - subtle indicator */}
+                              <span className="text-[10px] text-accent/70 mt-1.5">
+                                Matches: {result.matchedField}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* No Results */
+                      <div className="py-8 text-center">
+                        <p className="text-text-secondary mb-3">
+                          No models match "<span className="text-text-primary">{searchQuery}</span>"
+                        </p>
+                        <p className="text-xs text-text-muted">
+                          Try searching for:
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-2 mt-2">
+                          {['GPT', 'Claude', 'Gemini', 'vision', 'code', 'fast'].map(term => (
+                            <button
+                              key={term}
+                              onClick={() => setSearchQuery(term)}
+                              className="px-2 py-1 text-xs rounded-md bg-white/5 hover:bg-accent/20 text-text-muted hover:text-text-primary transition-colors"
+                            >
+                              {term}
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    );
-                  })}
+                    )
+                  ) : (
+                    /* Tier-Grouped View (default) */
+                    tierOrder.map((tier) => {
+                      const models = groupedModels[tier];
+                      if (!models?.length) return null;
+
+                      return (
+                        <div key={tier}>
+                          {/* Tier Section Header */}
+                          <div className="flex items-center gap-2 mb-2 sticky top-0 bg-bg-secondary/95 backdrop-blur-sm py-1.5 -mx-1 px-1 z-10">
+                            <GlowBadge variant={tierBadgeVariants[tier]} size="sm">
+                              {tierLabels[tier]}
+                            </GlowBadge>
+                            <span className="text-xs text-text-muted">
+                              {models.length} model{models.length > 1 ? 's' : ''}
+                            </span>
+                          </div>
+
+                          {/* Models in this tier */}
+                          <div className="grid grid-cols-1 gap-2">
+                            {models.map((model) => {
+                              const description = getModelDescription(model.id);
+                              return (
+                                <button
+                                  key={model.id}
+                                  onClick={() => {
+                                    addModel(model);
+                                    setShowModelSelector(false);
+                                  }}
+                                  className="flex flex-col p-3 rounded-xl glass-subtle
+                                           hover:bg-accent/10 hover:border-accent transition-all text-left group w-full"
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <div>
+                                      <div className="text-sm font-medium text-text-primary group-hover:text-accent-secondary transition-colors">
+                                        {model.display_name}
+                                      </div>
+                                      <div className="text-xs text-text-muted">{model.provider}</div>
+                                    </div>
+                                    <div className="text-xs text-text-muted">
+                                      ${model.cost_per_1k_output.toFixed(4)}/1k
+                                    </div>
+                                  </div>
+                                  {description && (
+                                    <div className="mt-2 text-xs text-text-secondary leading-relaxed">
+                                      {description.tagline}
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </GlassCard>
             )}
