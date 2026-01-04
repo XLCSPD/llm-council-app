@@ -8,6 +8,7 @@ import {
   ROLE_LABELS,
   ROLE_COLORS,
 } from '../pdfStyles';
+import { renderMarkdownToPdf } from '../markdownRenderer';
 import type { FullSessionData, PromptConfig } from '@/types';
 
 interface PromptSectionData {
@@ -50,19 +51,22 @@ export function addPromptSection(doc: jsPDF, data: PromptSectionData, startY: nu
   doc.setFontSize(PDF_FONT_SIZES.heading3);
   doc.setTextColor(...hexToRgb(PDF_COLORS.textPrimary));
   doc.text('User Prompt', margin, y);
+  y += 3;
+
+  // Accent underline
+  doc.setDrawColor(...hexToRgb(PDF_COLORS.teal));
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, margin + 40, y);
   y += PDF_SPACING.lineHeight + 2;
 
-  // Prompt box
-  doc.setFillColor(...hexToRgb(PDF_COLORS.cardBg));
-  const promptLines = doc.splitTextToSize(data.prompt.content || 'No content', contentWidth - 10);
-  const promptBoxHeight = Math.max(promptLines.length * 5 + 10, 20);
-  doc.roundedRect(margin, y - 3, contentWidth, promptBoxHeight, 2, 2, 'F');
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(PDF_FONT_SIZES.body);
-  doc.setTextColor(...hexToRgb(PDF_COLORS.textPrimary));
-  doc.text(promptLines, margin + 5, y + 3);
-  y += promptBoxHeight + PDF_SPACING.paragraphGap;
+  // Render prompt content with markdown formatting
+  const promptContent = data.prompt.content || 'No content';
+  y = renderMarkdownToPdf(doc, promptContent, {
+    startX: margin,
+    startY: y,
+    maxWidth: contentWidth,
+  });
+  y += PDF_SPACING.paragraphGap;
 
   // Objective
   if (data.prompt.objective) {
@@ -148,18 +152,27 @@ export function addPromptSection(doc: jsPDF, data: PromptSectionData, startY: nu
 }
 
 function addField(doc: jsPDF, label: string, value: string, x: number, y: number, width: number): number {
+  // Check for page break
+  if (y > PDF_PAGE.height - 40) {
+    doc.addPage();
+    y = PDF_SPACING.pageMargin;
+  }
+
+  // Label with accent styling
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(PDF_FONT_SIZES.heading3);
   doc.setTextColor(...hexToRgb(PDF_COLORS.textSecondary));
   doc.text(label, x, y);
   y += PDF_SPACING.lineHeight;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(PDF_FONT_SIZES.body);
-  doc.setTextColor(...hexToRgb(PDF_COLORS.textPrimary));
-  const lines = doc.splitTextToSize(value, width - 10);
-  doc.text(lines, x + 5, y);
-  y += lines.length * 5 + PDF_SPACING.paragraphGap;
+  // Render value with markdown formatting
+  y = renderMarkdownToPdf(doc, value, {
+    startX: x,
+    startY: y,
+    maxWidth: width,
+    indent: 4,
+  });
+  y += PDF_SPACING.smallGap;
 
   return y;
 }

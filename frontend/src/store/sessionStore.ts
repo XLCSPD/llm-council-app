@@ -71,6 +71,7 @@ const defaultPrompt: PromptConfig = {
   constraints: [],
   audience: null,
   context: null,
+  attachments: [],
 };
 
 export const useSessionStore = create<SessionState>((set) => ({

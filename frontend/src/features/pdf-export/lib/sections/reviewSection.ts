@@ -6,6 +6,7 @@ import {
   PDF_SPACING,
   hexToRgb,
 } from '../pdfStyles';
+import { renderMarkdownToPdf } from '../markdownRenderer';
 import type { FullSessionData } from '@/types';
 
 interface ReviewSectionData {
@@ -217,10 +218,16 @@ export function addReviewSection(doc: jsPDF, data: ReviewSectionData, startY: nu
     doc.setFontSize(PDF_FONT_SIZES.heading3);
     doc.setTextColor(...hexToRgb(PDF_COLORS.textPrimary));
     doc.text('Review Rationales', margin, y);
+    y += 3;
+
+    // Accent underline
+    doc.setDrawColor(...hexToRgb(PDF_COLORS.teal));
+    doc.setLineWidth(0.4);
+    doc.line(margin, y, margin + 55, y);
     y += PDF_SPACING.lineHeight + 2;
 
     for (const review of reviewsWithRationale.slice(0, 5)) { // Limit to 5 rationales
-      if (y > PDF_PAGE.height - 40) {
+      if (y > PDF_PAGE.height - 50) {
         doc.addPage();
         y = PDF_SPACING.pageMargin;
       }
@@ -228,22 +235,35 @@ export function addReviewSection(doc: jsPDF, data: ReviewSectionData, startY: nu
       const reviewer = modelMap.get(review.reviewer_run_model_id);
       const reviewed = modelMap.get(review.reviewed_run_model_id);
 
+      // Score badge
+      const scoreColor = review.score >= 8 ? PDF_COLORS.success :
+                        review.score >= 6 ? PDF_COLORS.warning :
+                        PDF_COLORS.error;
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(PDF_FONT_SIZES.small);
       doc.setTextColor(...hexToRgb(PDF_COLORS.textSecondary));
-      doc.text(
-        `${reviewer?.display_name || 'Unknown'} on ${reviewed?.display_name || 'Unknown'} (${review.score}/10):`,
-        margin,
-        y
-      );
-      y += PDF_SPACING.lineHeight;
+      const headerText = `${reviewer?.display_name || 'Unknown'} → ${reviewed?.display_name || 'Unknown'}`;
+      doc.text(headerText, margin, y);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(PDF_FONT_SIZES.small);
-      doc.setTextColor(...hexToRgb(PDF_COLORS.textPrimary));
-      const rationaleLines = doc.splitTextToSize(review.rationale || '', contentWidth - 10);
-      doc.text(rationaleLines.slice(0, 4), margin + 5, y); // Limit to 4 lines
-      y += Math.min(rationaleLines.length, 4) * 4.5 + PDF_SPACING.smallGap;
+      // Score badge inline
+      const headerWidth = doc.getTextWidth(headerText);
+      doc.setFillColor(...hexToRgb(scoreColor));
+      doc.roundedRect(margin + headerWidth + 5, y - 3, 18, 6, 1, 1, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(PDF_FONT_SIZES.caption);
+      doc.text(`${review.score}/10`, margin + headerWidth + 14, y, { align: 'center' });
+
+      y += PDF_SPACING.lineHeight + 1;
+
+      // Render rationale with markdown
+      y = renderMarkdownToPdf(doc, review.rationale || '', {
+        startX: margin,
+        startY: y,
+        maxWidth: contentWidth,
+        indent: 4,
+      });
+      y += PDF_SPACING.smallGap + 2;
     }
   }
 

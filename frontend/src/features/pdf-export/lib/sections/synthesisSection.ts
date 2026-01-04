@@ -7,6 +7,7 @@ import {
   hexToRgb,
   ROLE_LABELS,
 } from '../pdfStyles';
+import { renderMarkdownToPdf } from '../markdownRenderer';
 import type { FullSessionData } from '@/types';
 
 interface SynthesisSectionData {
@@ -126,44 +127,23 @@ export function addSynthesisSection(doc: jsPDF, data: SynthesisSectionData, star
   doc.setFontSize(PDF_FONT_SIZES.heading3);
   doc.setTextColor(...hexToRgb(PDF_COLORS.textPrimary));
   doc.text('Full Synthesis', margin, y);
+  y += 3;
+
+  // Accent underline for section
+  doc.setDrawColor(...hexToRgb(PDF_COLORS.teal));
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, margin + 45, y);
   y += PDF_SPACING.lineHeight + 2;
 
-  // Synthesis content box
-  doc.setFillColor(...hexToRgb(PDF_COLORS.cardBg));
-  const synthesisLines = doc.splitTextToSize(synthesisOutput.content || '', contentWidth - 15);
+  // Render synthesis content with markdown formatting
+  const synthesisContent = synthesisOutput.content || '';
+  y = renderMarkdownToPdf(doc, synthesisContent, {
+    startX: margin,
+    startY: y,
+    maxWidth: contentWidth,
+  });
 
-  // Handle multi-page content
-  let remainingLines = [...synthesisLines];
-  let isFirstPage = true;
-
-  while (remainingLines.length > 0) {
-    if (!isFirstPage) {
-      doc.addPage();
-      y = PDF_SPACING.pageMargin;
-
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(PDF_FONT_SIZES.caption);
-      doc.setTextColor(...hexToRgb(PDF_COLORS.textMuted));
-      doc.text('Synthesis (continued)', margin, y);
-      y += PDF_SPACING.lineHeight;
-    }
-
-    const maxLines = Math.floor((PDF_PAGE.height - y - 20) / 4.5);
-    const pageLines = remainingLines.slice(0, maxLines);
-    remainingLines = remainingLines.slice(maxLines);
-
-    const boxHeight = pageLines.length * 4.5 + 10;
-    doc.setFillColor(...hexToRgb(PDF_COLORS.cardBg));
-    doc.roundedRect(margin, y - 2, contentWidth, boxHeight, 2, 2, 'F');
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(PDF_FONT_SIZES.small);
-    doc.setTextColor(...hexToRgb(PDF_COLORS.textPrimary));
-    doc.text(pageLines, margin + 5, y + 4);
-
-    y += boxHeight + PDF_SPACING.paragraphGap;
-    isFirstPage = false;
-  }
+  y += PDF_SPACING.paragraphGap;
 
   // Minority Opinions
   const minorityOpinions = synthesisOutput.metadata?.minority_opinions as string[] | undefined;

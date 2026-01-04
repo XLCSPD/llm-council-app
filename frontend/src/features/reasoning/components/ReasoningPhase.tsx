@@ -1,11 +1,16 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, CheckCircle2, XCircle, Clock, ChevronRight, Brain, Timer, Zap, TrendingUp } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Clock, ChevronRight, Brain, Timer, Zap, TrendingUp, FileText, FileCode } from 'lucide-react';
 import { useSessionStore, useCouncilStore } from '@/store';
 import { orchestratorApi } from '@/api/orchestrator';
 import { useRealtimeRunStatus, useReplayMode } from '@/hooks';
 import { ReplayModeIndicator, ReplayPhaseNavigation } from '@/components/replay';
 import { GlassCard, GradientButton, GlowBadge } from '@/components/ui';
+import {
+  ResponseExportMenu,
+  exportAllReasoningAsMarkdown,
+  exportAllReasoningAsPdf,
+} from '@/features/pdf-export';
 
 interface ModelOutput {
   id: string;
@@ -48,7 +53,7 @@ const statusIcons = {
 };
 
 export function ReasoningPhase() {
-  const { currentRunId, setCurrentPhase, addReasoningResponse } = useSessionStore();
+  const { currentRunId, setCurrentPhase, addReasoningResponse, prompt, currentSession } = useSessionStore();
   const { selectedModels } = useCouncilStore();
   const { isReplayMode, replayData, reasoningOutputs, modelInfo } = useReplayMode();
   const [runData, setRunData] = useState<RunData | null>(null);
@@ -77,6 +82,60 @@ export function ReasoningPhase() {
     }
   };
 
+  // Helper to export all reasoning responses
+  const handleExportAllReasoning = (format: 'markdown' | 'pdf') => {
+    // Get completed reasoning responses from runData or replay mode
+    const responses = isReplayMode && replayData
+      ? modelInfo
+          .map(model => {
+            const output = reasoningOutputs.get(model.id);
+            if (!output?.content) return null;
+            return {
+              modelName: model.display_name,
+              role: model.role,
+              content: output.content,
+              latency_ms: output.latency_ms || 0,
+              token_count: output.token_count || 0,
+              timestamp: output.created_at,
+            };
+          })
+          .filter((r): r is NonNullable<typeof r> => r !== null)
+      : (runData?.models || [])
+          .filter(m => m.status === 'succeeded')
+          .map(m => {
+            const output = m.outputs?.find(o => o.phase === 2);
+            if (!output?.content) return null;
+            return {
+              modelName: m.display_name,
+              role: m.role,
+              content: output.content,
+              latency_ms: m.latency_ms || 0,
+              token_count: (output.metadata?.token_count as number) || 0,
+              timestamp: output.created_at,
+            };
+          })
+          .filter((r): r is NonNullable<typeof r> => r !== null);
+
+    if (responses.length === 0) return;
+
+    const sessionTitle = isReplayMode
+      ? replayData?.session?.title || 'Session'
+      : currentSession?.title || 'Session';
+
+    const data = {
+      sessionTitle,
+      promptContent: prompt.content || '',
+      responses,
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (format === 'markdown') {
+      exportAllReasoningAsMarkdown(data);
+    } else {
+      exportAllReasoningAsPdf(data);
+    }
+  };
+
   // Render replay mode view
   if (isReplayMode && replayData) {
     return (
@@ -101,6 +160,30 @@ export function ReasoningPhase() {
         <div className="flex justify-center">
           <ReplayPhaseNavigation />
         </div>
+
+        {/* Export All Buttons */}
+        {modelInfo.some(m => reasoningOutputs.has(m.id)) && (
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => handleExportAllReasoning('markdown')}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium
+                rounded-lg transition-all bg-slate-700/50 hover:bg-slate-700
+                text-slate-300 hover:text-white"
+            >
+              <FileCode className="w-4 h-4" />
+              Export All (MD)
+            </button>
+            <button
+              onClick={() => handleExportAllReasoning('pdf')}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium
+                rounded-lg transition-all bg-gradient-to-r from-teal-600 to-cyan-600
+                hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-teal-500/20"
+            >
+              <FileText className="w-4 h-4" />
+              Export All (PDF)
+            </button>
+          </div>
+        )}
 
         {/* Model Response Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -133,6 +216,19 @@ export function ReasoningPhase() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {output && (
+                      <ResponseExportMenu
+                        modelName={model.display_name}
+                        role={model.role}
+                        content={output.content}
+                        metadata={{
+                          latency_ms: output.latency_ms || 0,
+                          token_count: output.token_count || 0,
+                          timestamp: output.created_at || new Date().toISOString(),
+                        }}
+                        promptContent={replayData?.prompt?.content || prompt.content}
+                      />
+                    )}
                     {output ? (
                       <CheckCircle2 className="w-5 h-5 text-accent-success" />
                     ) : (
@@ -360,6 +456,30 @@ export function ReasoningPhase() {
         );
       })()}
 
+      {/* Export All Buttons - show when all models have completed */}
+      {runData?.status === 'succeeded' && (
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => handleExportAllReasoning('markdown')}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium
+              rounded-lg transition-all bg-slate-700/50 hover:bg-slate-700
+              text-slate-300 hover:text-white"
+          >
+            <FileCode className="w-4 h-4" />
+            Export All (MD)
+          </button>
+          <button
+            onClick={() => handleExportAllReasoning('pdf')}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium
+              rounded-lg transition-all bg-gradient-to-r from-teal-600 to-cyan-600
+              hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-teal-500/20"
+          >
+            <FileText className="w-4 h-4" />
+            Export All (PDF)
+          </button>
+        </div>
+      )}
+
       {/* Model Response Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {models.map((model) => {
@@ -397,6 +517,19 @@ export function ReasoningPhase() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {model.status === 'succeeded' && content && (
+                    <ResponseExportMenu
+                      modelName={model.display_name}
+                      role={model.role}
+                      content={content}
+                      metadata={{
+                        latency_ms: modelData?.latency_ms || 0,
+                        token_count: (reasoningOutput?.metadata?.token_count as number) || 0,
+                        timestamp: reasoningOutput?.created_at || new Date().toISOString(),
+                      }}
+                      promptContent={prompt.content}
+                    />
+                  )}
                   <StatusIcon
                     className={`w-5 h-5 ${
                       model.status === 'running' ? 'animate-spin text-accent-secondary' :

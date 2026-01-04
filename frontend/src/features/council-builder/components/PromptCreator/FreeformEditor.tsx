@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Sparkles, Loader2, Plus, X, Trash2 } from 'lucide-react';
-import { useSessionStore } from '@/store';
+import { useSessionStore, useCouncilStore } from '@/store';
 import { orchestratorApi, type PromptEnhanceResponse } from '@/api/orchestrator';
+import { AttachmentUploader } from './AttachmentUploader';
+import { VisionWarning } from './VisionWarning';
+import type { PromptAttachment } from '@/types';
 
 interface FreeformEditorProps {
   onEnhanceStart?: () => void;
@@ -10,6 +13,7 @@ interface FreeformEditorProps {
 
 export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEditorProps) {
   const { prompt, updatePrompt, resetPrompt } = useSessionStore();
+  const { selectedModels, availableModels, setAvailableModels } = useCouncilStore();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
   const [newConstraint, setNewConstraint] = useState('');
@@ -17,7 +21,30 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
 
   // Check if prompt has any content
   const hasContent = prompt.content.trim() || prompt.objective || prompt.audience ||
-                     prompt.context || prompt.constraints.length > 0;
+                     prompt.context || prompt.constraints.length > 0 || prompt.attachments.length > 0;
+
+  // Vision model checks
+  const hasAttachments = prompt.attachments.length > 0;
+  const nonVisionModels = selectedModels.filter((m) => {
+    const modelInfo = availableModels.find((am) => am.id === m.model_id);
+    return modelInfo && !modelInfo.supports_vision;
+  });
+  const showVisionWarning = hasAttachments && nonVisionModels.length > 0;
+
+  // Attachment handlers
+  const handleAttach = (attachment: PromptAttachment) => {
+    updatePrompt({ attachments: [...prompt.attachments, attachment] });
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    updatePrompt({ attachments: prompt.attachments.filter((a) => a.id !== id) });
+  };
+
+  const handleFilterVision = () => {
+    // Filter available models to show only vision-capable ones
+    const visionModels = availableModels.filter((m) => m.supports_vision);
+    setAvailableModels(visionModels);
+  };
 
   const handleClearPrompt = () => {
     resetPrompt();
@@ -230,6 +257,27 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
           </div>
         </div>
       </div>
+
+      {/* Attachments */}
+      <div>
+        <label className="block text-sm font-medium text-text-secondary mb-1.5">
+          Attachments (Optional)
+        </label>
+        <AttachmentUploader
+          attachments={prompt.attachments}
+          onAttach={handleAttach}
+          onRemove={handleRemoveAttachment}
+        />
+      </div>
+
+      {/* Vision Warning */}
+      {showVisionWarning && (
+        <VisionWarning
+          nonVisionCount={nonVisionModels.length}
+          totalCount={selectedModels.length}
+          onFilterVision={handleFilterVision}
+        />
+      )}
     </div>
   );
 }

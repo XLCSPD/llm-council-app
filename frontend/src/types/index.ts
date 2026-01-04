@@ -88,6 +88,9 @@ export interface SessionSummary {
   council_name: string;
 }
 
+// Model tier categories
+export type ModelTier = 'fast' | 'balanced' | 'deep' | 'executive' | 'code' | 'critic';
+
 // Model info
 export interface ModelInfo {
   id: string;
@@ -100,6 +103,8 @@ export interface ModelInfo {
   recommended_roles: RoleType[];
   /** Whether this model supports vision/image inputs */
   supports_vision?: boolean;
+  /** Model tier category for grouping/filtering */
+  tier?: ModelTier;
 }
 
 // Model output

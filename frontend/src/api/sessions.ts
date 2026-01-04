@@ -18,6 +18,16 @@ interface DbPrompt {
   constraints: string[] | null;
   audience: string | null;
   context: string | null;
+  attachments: Array<{
+    id: string;
+    type: 'image' | 'pdf';
+    filename: string;
+    storage_path: string;
+    public_url: string;
+    mime_type: string;
+    size_bytes: number;
+    extracted_text?: string;
+  }> | null;
 }
 
 interface DbRun {
@@ -183,6 +193,7 @@ export const sessionsApi = {
         constraints: promptData.constraints || [],
         audience: promptData.audience,
         context: promptData.context,
+        attachments: promptData.attachments || [],
       } : null,
       run: run ? {
         id: run.id,

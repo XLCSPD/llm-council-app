@@ -28,6 +28,7 @@ class SupabaseClient:
         constraints: Optional[list[str]] = None,
         audience: Optional[str] = None,
         context: Optional[str] = None,
+        attachments: Optional[list[dict]] = None,
     ) -> dict:
         """Create a new prompt record."""
         data = {
@@ -38,6 +39,7 @@ class SupabaseClient:
             "constraints": constraints or [],
             "audience": audience,
             "context": context,
+            "attachments": attachments or [],
         }
         result = self._client.table("prompts").insert(data).execute()
         return result.data[0]

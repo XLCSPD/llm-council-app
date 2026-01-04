@@ -1,18 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
   X,
   Plus,
+  Search,
   History,
   HelpCircle,
   Settings,
-  MessageSquare,
   Trash2,
   ChevronRight,
+  Pin,
+  Star,
+  Loader2,
 } from 'lucide-react';
-import { useSessionStore, useUIStore } from '@/store';
+import { useSessionStore, useUIStore, useDecisionMemoryStore, useAuthStore } from '@/store';
+import { supabase } from '@/lib/supabase';
+import { useSmartHistory } from '@/features/decision-memory/hooks/useSmartHistory';
+import type { SmartHistorySession } from '@/features/decision-memory/types';
 import type { SessionSummary } from '@/types';
 
 interface MobileNavProps {
@@ -23,8 +29,56 @@ interface MobileNavProps {
 export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const { sessions, currentSession, removeSession } = useSessionStore();
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const { user } = useAuthStore();
+  const { currentSession, removeSession } = useSessionStore();
   const { currentView, setCurrentView } = useUIStore();
+  const { openCommandPalette } = useDecisionMemoryStore();
+
+  // Fetch project ID
+  useEffect(() => {
+    async function fetchProjectId() {
+      if (!user?.id) return;
+      try {
+        const { data: workspace } = await supabase.rpc('setup_user_workspace', {
+          user_uuid: user.id,
+        } as unknown as undefined) as {
+          data: Array<{ out_org_id: string; out_project_id: string }> | null;
+        };
+        const workspaceResult = workspace?.[0];
+        if (workspaceResult?.out_project_id) {
+          setProjectId(workspaceResult.out_project_id);
+        }
+      } catch (err) {
+        console.error('Failed to fetch project ID:', err);
+      }
+    }
+    fetchProjectId();
+  }, [user?.id]);
+
+  const {
+    groupedSessions,
+    isLoading,
+    pinSession,
+    unpinSession,
+    loadSessions,
+  } = useSmartHistory(projectId);
+
+  // Load sessions when history is shown
+  useEffect(() => {
+    if (showHistory && projectId) {
+      loadSessions(projectId);
+    }
+  }, [showHistory, projectId, loadSessions]);
+
+  // Get all sessions in a flat list for mobile (simplified view)
+  const allSessions = [
+    ...groupedSessions.pinned,
+    ...groupedSessions.today,
+    ...groupedSessions.yesterday,
+    ...groupedSessions.thisWeek,
+    ...Array.from(groupedSessions.earlier.values()).flat(),
+  ];
 
   const handleClose = () => {
     setIsOpen(false);
@@ -46,6 +100,11 @@ export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
   const handleNavigation = (view: 'deliberation' | 'help' | 'settings') => {
     setCurrentView(view);
     handleClose();
+  };
+
+  const handleSearch = () => {
+    handleClose();
+    openCommandPalette();
   };
 
   return (
@@ -114,6 +173,17 @@ export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
                     <span>New Session</span>
                   </button>
 
+                  {/* Search Button */}
+                  <button
+                    onClick={handleSearch}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl
+                             text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50
+                             active:bg-bg-tertiary transition-colors"
+                  >
+                    <Search className="w-5 h-5" />
+                    <span className="flex-1 text-left">Search Sessions</span>
+                  </button>
+
                   {/* History Section */}
                   <div className="pt-2">
                     <button
@@ -139,18 +209,23 @@ export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
                           className="overflow-hidden"
                         >
                           <div className="mt-2 ml-2 space-y-1 max-h-[40vh] overflow-y-auto">
-                            {sessions.length === 0 ? (
+                            {isLoading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="w-5 h-5 text-accent animate-spin" />
+                              </div>
+                            ) : allSessions.length === 0 ? (
                               <div className="text-sm text-text-muted py-4 px-3 text-center">
                                 No sessions yet
                               </div>
                             ) : (
-                              sessions.map((session) => (
-                                <MobileSessionItem
+                              allSessions.map((session) => (
+                                <MobileSmartSessionItem
                                   key={session.id}
                                   session={session}
                                   isActive={currentSession?.id === session.id}
-                                  onClick={() => handleSelectSession(session)}
+                                  onClick={() => handleSelectSession({ id: session.id } as SessionSummary)}
                                   onDelete={() => removeSession(session.id)}
+                                  onPin={() => session.is_pinned ? unpinSession(session.id) : pinSession(session.id)}
                                 />
                               ))
                             )}
@@ -212,17 +287,19 @@ function MobileNavItem({ icon, label, isActive, onClick }: MobileNavItemProps) {
   );
 }
 
-interface MobileSessionItemProps {
-  session: SessionSummary;
+interface MobileSmartSessionItemProps {
+  session: SmartHistorySession;
   isActive: boolean;
   onClick: () => void;
   onDelete: () => void;
+  onPin: () => void;
 }
 
-function MobileSessionItem({ session, isActive, onClick, onDelete }: MobileSessionItemProps) {
-  const statusColors = {
+function MobileSmartSessionItem({ session, isActive, onClick, onDelete, onPin }: MobileSmartSessionItemProps) {
+  const statusColors: Record<string, string> = {
     draft: 'bg-text-muted',
     running: 'bg-accent animate-pulse',
+    succeeded: 'bg-accent-success',
     completed: 'bg-accent-success',
     failed: 'bg-accent-error',
   };
@@ -237,20 +314,40 @@ function MobileSessionItem({ session, isActive, onClick, onDelete }: MobileSessi
       onClick={onClick}
     >
       <div className="flex items-start gap-3">
-        <MessageSquare className="w-5 h-5 text-text-muted mt-0.5 flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span
-              className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[session.status]}`}
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[session.status] || 'bg-text-muted'}`}
             />
             <span className="text-sm font-medium text-text-primary truncate">
               {session.title || 'Untitled'}
             </span>
+            {session.is_pinned && (
+              <Pin className="w-3 h-3 text-amber-400 fill-amber-400 flex-shrink-0" />
+            )}
+            {session.rating && (
+              <span className="flex items-center gap-0.5 flex-shrink-0">
+                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                <span className="text-[10px] text-amber-400">{session.rating}</span>
+              </span>
+            )}
           </div>
           <div className="text-xs text-text-muted mt-1">
             {new Date(session.created_at).toLocaleDateString()}
           </div>
         </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPin();
+          }}
+          className={`p-2 rounded-lg transition-colors ${
+            session.is_pinned ? 'text-amber-400' : 'text-text-muted hover:text-amber-400'
+          }`}
+          aria-label={session.is_pinned ? 'Unpin session' : 'Pin session'}
+        >
+          <Pin className={`w-4 h-4 ${session.is_pinned ? 'fill-amber-400' : ''}`} />
+        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();

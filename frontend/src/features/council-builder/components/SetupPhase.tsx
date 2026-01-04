@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Play, Plus, Trash2, ChevronDown, Brain } from 'lucide-react';
 import { useSessionStore, useCouncilStore, useAuthStore } from '@/store';
 import { useReplayMode } from '@/hooks';
@@ -8,13 +8,31 @@ import { ReplayModeIndicator, ReplayPhaseNavigation } from '@/components/replay'
 import { GlassCard, GradientButton, GlowBadge, AIOrb, ModelTooltip } from '@/components/ui';
 import { PromptCreator } from './PromptCreator';
 import { getModelDescription } from '@/features/help/content/modelDescriptions';
-import type { RoleType } from '@/types';
+import type { RoleType, ModelInfo, ModelTier } from '@/types';
 
 const roleLabels: Record<RoleType, string> = {
   thinker: 'Thinker',
   critic: 'Critic',
   devils_advocate: "Devil's Advocate",
   synthesizer: 'Synthesizer',
+};
+
+const tierOrder: ModelTier[] = ['fast', 'balanced', 'deep', 'executive', 'code', 'critic'];
+const tierLabels: Record<ModelTier, string> = {
+  fast: 'Fast',
+  balanced: 'Balanced',
+  deep: 'Deep Analysis',
+  executive: 'Executive',
+  code: 'Code Specialist',
+  critic: 'Critical Analysis',
+};
+const tierBadgeVariants: Record<ModelTier, 'tier-fast' | 'tier-balanced' | 'tier-deep' | 'tier-executive' | 'tier-code' | 'tier-critic'> = {
+  fast: 'tier-fast',
+  balanced: 'tier-balanced',
+  deep: 'tier-deep',
+  executive: 'tier-executive',
+  code: 'tier-code',
+  critic: 'tier-critic',
 };
 
 export function SetupPhase() {
@@ -26,6 +44,17 @@ export function SetupPhase() {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Group models by tier for organized display
+  const groupedModels = useMemo(() => {
+    const groups: Partial<Record<ModelTier, ModelInfo[]>> = {};
+    availableModels.forEach(model => {
+      const tier = model.tier || 'balanced';
+      if (!groups[tier]) groups[tier] = [];
+      groups[tier]!.push(model);
+    });
+    return groups;
+  }, [availableModels]);
 
   // Render read-only view for replay mode
   if (isReplayMode && replayData) {
@@ -294,40 +323,62 @@ export function SetupPhase() {
               </GradientButton>
             </div>
 
-            {/* Model Selector Dropdown */}
+            {/* Model Selector Dropdown - Grouped by Tier */}
             {showModelSelector && (
               <GlassCard variant="subtle" padding="md" className="mb-4 animate-fade-in">
                 <div className="text-sm font-medium text-text-secondary mb-3">Select a model to add:</div>
-                <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-1">
-                  {availableModels.map((model) => {
-                    const description = getModelDescription(model.id);
+                <div className="max-h-80 overflow-y-auto pr-1 space-y-4">
+                  {tierOrder.map((tier) => {
+                    const models = groupedModels[tier];
+                    if (!models?.length) return null;
+
                     return (
-                      <button
-                        key={model.id}
-                        onClick={() => {
-                          addModel(model);
-                          setShowModelSelector(false);
-                        }}
-                        className="flex flex-col p-3 rounded-xl glass-subtle
-                                 hover:bg-accent/10 hover:border-accent transition-all text-left group w-full"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div>
-                            <div className="text-sm font-medium text-text-primary group-hover:text-accent-secondary transition-colors">
-                              {model.display_name}
-                            </div>
-                            <div className="text-xs text-text-muted">{model.provider}</div>
-                          </div>
-                          <div className="text-xs text-text-muted">
-                            ${model.cost_per_1k_output.toFixed(4)}/1k
-                          </div>
+                      <div key={tier}>
+                        {/* Tier Section Header */}
+                        <div className="flex items-center gap-2 mb-2 sticky top-0 bg-bg-secondary/95 backdrop-blur-sm py-1.5 -mx-1 px-1 z-10">
+                          <GlowBadge variant={tierBadgeVariants[tier]} size="sm">
+                            {tierLabels[tier]}
+                          </GlowBadge>
+                          <span className="text-xs text-text-muted">
+                            {models.length} model{models.length > 1 ? 's' : ''}
+                          </span>
                         </div>
-                        {description && (
-                          <div className="mt-2 text-xs text-text-secondary leading-relaxed">
-                            {description.tagline}
-                          </div>
-                        )}
-                      </button>
+
+                        {/* Models in this tier */}
+                        <div className="grid grid-cols-1 gap-2">
+                          {models.map((model) => {
+                            const description = getModelDescription(model.id);
+                            return (
+                              <button
+                                key={model.id}
+                                onClick={() => {
+                                  addModel(model);
+                                  setShowModelSelector(false);
+                                }}
+                                className="flex flex-col p-3 rounded-xl glass-subtle
+                                         hover:bg-accent/10 hover:border-accent transition-all text-left group w-full"
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <div>
+                                    <div className="text-sm font-medium text-text-primary group-hover:text-accent-secondary transition-colors">
+                                      {model.display_name}
+                                    </div>
+                                    <div className="text-xs text-text-muted">{model.provider}</div>
+                                  </div>
+                                  <div className="text-xs text-text-muted">
+                                    ${model.cost_per_1k_output.toFixed(4)}/1k
+                                  </div>
+                                </div>
+                                {description && (
+                                  <div className="mt-2 text-xs text-text-secondary leading-relaxed">
+                                    {description.tagline}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>

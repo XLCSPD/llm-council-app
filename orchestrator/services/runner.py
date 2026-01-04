@@ -49,6 +49,38 @@ MODEL_COSTS: dict[str, dict[str, float]] = {
     "deepseek/deepseek-chat-v3.1": {"input": 0.00015, "output": 0.00075},
 }
 
+# Models that support vision/multimodal input
+MODEL_VISION_SUPPORT: set[str] = {
+    # OpenAI GPT-4o and later support vision
+    "openai/gpt-4o-mini",
+    "openai/gpt-4.1",
+    "openai/gpt-4.1-mini",
+    "openai/gpt-4.1-nano",
+    "openai/gpt-5",
+    "openai/gpt-5.1",
+    "openai/gpt-5.2",
+    "openai/gpt-5-mini",
+    "openai/gpt-5-nano",
+    # Anthropic Claude 3.5+ and 4+ support vision
+    "anthropic/claude-opus-4.5",
+    "anthropic/claude-sonnet-4.5",
+    "anthropic/claude-sonnet-4",
+    "anthropic/claude-haiku-4.5",
+    "anthropic/claude-3.7-sonnet",
+    "anthropic/claude-3.5-sonnet",
+    "anthropic/claude-3.5-haiku",
+    # Google Gemini 2+ supports vision
+    "google/gemini-2.5-flash",
+    "google/gemini-2.0-flash-001",
+    "google/gemini-2.5-pro",
+    # xAI Grok 3+ supports vision
+    "x-ai/grok-3-mini",
+    "x-ai/grok-3",
+    "x-ai/grok-4-fast",
+    # Mistral Large supports vision
+    "mistralai/mistral-large-2411",
+}
+
 
 def calculate_cost(model_key: str, prompt_tokens: int, completion_tokens: int) -> float:
     """Calculate cost in USD for a model completion."""
@@ -68,6 +100,9 @@ class RunnerService:
 
     async def create_run(self, request: RunCreate, user_id: UUID) -> dict:
         """Create a new run and return the run record."""
+        # Convert attachments to dict format for storage
+        attachments_data = [att.model_dump() for att in request.prompt.attachments] if request.prompt.attachments else []
+
         # Create prompt record
         prompt = await self.db.create_prompt(
             session_id=request.session_id,
@@ -77,6 +112,7 @@ class RunnerService:
             constraints=request.prompt.constraints or [],
             audience=request.prompt.audience,
             context=request.prompt.context,
+            attachments=attachments_data,
         )
 
         # Create run record
@@ -171,6 +207,7 @@ class RunnerService:
         prompt_constraints = prompt_data.get("constraints")
         prompt_audience = prompt_data.get("audience")
         prompt_context = prompt_data.get("context")
+        prompt_attachments = prompt_data.get("attachments") or []
 
         # Build requests for all models
         requests = []
@@ -181,6 +218,10 @@ class RunnerService:
             if role == "chair":
                 continue  # Chair doesn't participate in reasoning phase
 
+            # Check if this model supports vision
+            model_key = rm["model_key"]
+            supports_vision = model_key in MODEL_VISION_SUPPORT
+
             messages = build_reasoning_prompt(
                 user_prompt=prompt_content,
                 role=role,
@@ -188,6 +229,8 @@ class RunnerService:
                 constraints=prompt_constraints,
                 audience=prompt_audience,
                 context=prompt_context,
+                attachments=prompt_attachments if prompt_attachments else None,
+                supports_vision=supports_vision,
             )
 
             requests.append({

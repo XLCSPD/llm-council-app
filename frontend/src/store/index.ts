@@ -4,3 +4,4 @@ export { useSessionStore } from './sessionStore';
 export { useAuthStore } from './authStore';
 export { useSettingsStore } from './settingsStore';
 export { useHelpStore } from './helpStore';
+export { useDecisionMemoryStore, useCommandPaletteShortcut } from './decisionMemoryStore';

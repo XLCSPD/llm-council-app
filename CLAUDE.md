@@ -29,6 +29,7 @@ LLM Council is a multi-agent AI deliberation platform that assembles configurabl
 - Supabase Realtime subscriptions for live updates during runs
 - Feature-based organization in `features/` (council-builder, help, pdf-export, peer-review, prompt-editor, reasoning, review, session, settings, synthesis)
 - Path alias: `@/*` maps to `src/*`
+- Strict TypeScript config: `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`
 
 ### Orchestrator (`orchestrator/`)
 - FastAPI service that executes council deliberations
@@ -57,6 +58,7 @@ cd frontend
 npm install
 npm run dev          # Development server (port 5173)
 npm run build        # Production build (runs tsc -b && vite build)
+npm run preview      # Preview production build locally
 npm run lint         # ESLint
 npx tsc --noEmit     # Type check only
 ```
@@ -108,6 +110,16 @@ OPENROUTER_API_KEY=your-openrouter-key
 DEBUG=true
 ```
 
+## Core Domain Types (`frontend/src/types/index.ts`)
+
+- **RoleType**: `'thinker' | 'critic' | 'devils_advocate' | 'synthesizer'` - Council member roles
+- **PhaseType**: `'setup' | 'reasoning' | 'review' | 'synthesis'` - Deliberation phases
+- **PhaseStatus**: `'pending' | 'running' | 'completed' | 'failed' | 'skipped'`
+- **SessionStatus**: `'draft' | 'running' | 'completed' | 'failed'`
+- **CouncilPreset**: `'fast' | 'balanced' | 'deep_analysis' | 'executive'`
+
+Key interfaces: `Session`, `CouncilMember`, `PromptConfig`, `ModelOutput`, `PeerReview`, `SynthesisOutput`
+
 ## State Management (Zustand Stores)
 
 - **councilStore** - Selected models and role assignments for current council
@@ -157,7 +169,27 @@ The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to
 - `POST /api/runs/{run_id}/cancel` - Cancel a running deliberation
 - `POST /api/prompts/enhance` - AI-powered prompt enhancement (improves prompt clarity, suggests objectives/constraints)
 
+## Development Workflow
+
+Run both services in separate terminals for local development:
+```bash
+# Terminal 1 - Frontend
+cd frontend && npm run dev
+
+# Terminal 2 - Orchestrator
+cd orchestrator && source .venv/bin/activate && python -m uvicorn main:app --port 8002 --reload
+```
+
+## Test Account
+
+For Playwright MCP testing and development:
+```
+Email: claudecodetest@gmail.com
+Password: TestPassword123!
+```
+
 ## Notes
 
 - The `/api` proxy in `vite.config.ts` points to port 8001 (legacy backend). The frontend uses `VITE_ORCHESTRATOR_URL` for orchestrator calls directly.
 - `backend/` contains the legacy FastAPI backend (deprecated) - new development should use `orchestrator/`
+- Run deliberations trigger background tasks in FastAPI; results appear via Supabase Realtime subscriptions

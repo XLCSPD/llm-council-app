@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import {
   Plus,
-  MessageSquare,
-  Trash2,
   Settings,
-  History,
-  ChevronRight,
   HelpCircle,
+  Search,
 } from 'lucide-react';
-import { useSessionStore, useUIStore } from '@/store';
+import { useSessionStore, useUIStore, useDecisionMemoryStore } from '@/store';
+import { SmartHistoryPanel } from '@/features/decision-memory/components/SmartHistory';
 import type { SessionSummary } from '@/types';
 
 interface IconSidebarProps {
@@ -18,9 +16,15 @@ interface IconSidebarProps {
 
 export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const { sessions, currentSession, removeSession } = useSessionStore();
+  const { removeSession } = useSessionStore();
   const { currentView, setCurrentView } = useUIStore();
+  const { openCommandPalette } = useDecisionMemoryStore();
+
+  const handleSelectSession = (sessionId: string) => {
+    setCurrentView('deliberation');
+    // SmartHistory provides session IDs, we need to pass as SessionSummary
+    onSelectSession({ id: sessionId } as SessionSummary);
+  };
 
   return (
     <aside
@@ -31,10 +35,7 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
         ${isExpanded ? 'w-[280px]' : 'w-[72px]'}
       `}
       onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => {
-        setIsExpanded(false);
-        setShowHistory(false);
-      }}
+      onMouseLeave={() => setIsExpanded(false)}
     >
       {/* Logo */}
       <div
@@ -74,52 +75,38 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
           <span className={`${isExpanded ? 'block' : 'hidden'}`}>New Session</span>
         </button>
 
-        {/* History Section */}
-        <div>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className={`
-              w-full flex items-center gap-3 p-3 rounded-xl
-              text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50
-              transition-colors
-              ${isExpanded ? '' : 'justify-center'}
-            `}
-          >
-            <History className="w-5 h-5 flex-shrink-0" />
-            <span className={`flex-1 text-left ${isExpanded ? 'block' : 'hidden'}`}>
-              History
-            </span>
-            {isExpanded && (
-              <ChevronRight
-                className={`w-4 h-4 transition-transform ${showHistory ? 'rotate-90' : ''}`}
-              />
-            )}
-          </button>
-
-          {/* Session History List */}
-          {isExpanded && showHistory && (
-            <div className="mt-2 ml-2 space-y-1 max-h-[calc(100vh-400px)] overflow-y-auto">
-              {sessions.length === 0 ? (
-                <div className="text-xs text-text-muted py-4 px-3 text-center">
-                  No sessions yet
-                </div>
-              ) : (
-                sessions.map((session) => (
-                  <SessionItem
-                    key={session.id}
-                    session={session}
-                    isActive={currentSession?.id === session.id}
-                    onClick={() => {
-                      setCurrentView('deliberation');
-                      onSelectSession(session);
-                    }}
-                    onDelete={() => removeSession(session.id)}
-                  />
-                ))
-              )}
-            </div>
+        {/* Search / Command Palette Button */}
+        <button
+          onClick={openCommandPalette}
+          className={`
+            w-full flex items-center gap-3 p-3 rounded-xl
+            text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50
+            transition-colors group
+            ${isExpanded ? '' : 'justify-center'}
+          `}
+          title="Search sessions (⌘K)"
+        >
+          <Search className="w-5 h-5 flex-shrink-0" />
+          {isExpanded && (
+            <>
+              <span className="flex-1 text-left">Search</span>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-bg-tertiary text-text-muted group-hover:bg-accent/10 group-hover:text-accent transition-colors">
+                ⌘K
+              </kbd>
+            </>
           )}
-        </div>
+        </button>
+
+        {/* Smart History Section */}
+        {isExpanded && (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <SmartHistoryPanel
+              onSelectSession={handleSelectSession}
+              onDeleteSession={removeSession}
+              maxHeight="calc(100vh - 320px)"
+            />
+          </div>
+        )}
       </nav>
 
       {/* Bottom Section */}
@@ -174,57 +161,3 @@ function NavItem({ icon, label, isExpanded, isActive, onClick, dataTour }: NavIt
   );
 }
 
-interface SessionItemProps {
-  session: SessionSummary;
-  isActive: boolean;
-  onClick: () => void;
-  onDelete: () => void;
-}
-
-function SessionItem({ session, isActive, onClick, onDelete }: SessionItemProps) {
-  const statusColors = {
-    draft: 'bg-text-muted',
-    running: 'bg-accent animate-pulse',
-    completed: 'bg-accent-success',
-    failed: 'bg-accent-error',
-  };
-
-  return (
-    <div
-      className={`
-        group relative rounded-lg p-2.5 cursor-pointer transition-all
-        ${isActive ? 'bg-accent/10 border border-accent/20' : 'hover:bg-bg-tertiary/50'}
-      `}
-      onClick={onClick}
-    >
-      <div className="flex items-start gap-2">
-        <MessageSquare className="w-4 h-4 text-text-muted mt-0.5 flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${statusColors[session.status]}`}
-            />
-            <span className="text-sm font-medium text-text-primary truncate">
-              {session.title || 'Untitled'}
-            </span>
-          </div>
-          <div className="text-xs text-text-muted mt-0.5 truncate">
-            {new Date(session.created_at).toLocaleDateString()}
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="absolute right-1.5 top-1.5 p-1 rounded opacity-0 group-hover:opacity-100
-                   hover:bg-accent-error/10 transition-all"
-        title="Delete session"
-      >
-        <Trash2 className="w-3 h-3 text-accent-error" />
-      </button>
-    </div>
-  );
-}

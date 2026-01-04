@@ -114,6 +114,7 @@ class ModelInfo(BaseModel):
     cost_per_1k_output: float
     supports_streaming: bool
     recommended_roles: list[RoleType]
+    tier: Optional[str] = None  # fast, balanced, deep, executive, code, critic
 
 
 class AnalyticsResponse(BaseModel):

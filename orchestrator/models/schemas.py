@@ -53,6 +53,18 @@ class CouncilConfig(BaseModel):
     )
 
 
+class PromptAttachment(BaseModel):
+    """Attachment for a prompt (image or PDF)."""
+    id: str
+    type: str = Field(..., description="Attachment type: 'image' or 'pdf'")
+    filename: str
+    storage_path: str
+    public_url: str
+    mime_type: str
+    size_bytes: int
+    extracted_text: Optional[str] = None
+
+
 class PromptConfig(BaseModel):
     """Prompt configuration for a run."""
     content: str = Field(..., min_length=1)
@@ -60,6 +72,7 @@ class PromptConfig(BaseModel):
     constraints: List[str] = Field(default_factory=list)
     audience: Optional[str] = None
     context: Optional[str] = None
+    attachments: List[PromptAttachment] = Field(default_factory=list)
 
 
 class RunCreate(BaseModel):

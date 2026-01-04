@@ -41,6 +41,21 @@ export const modelDescriptions: Record<string, ModelDescription> = {
     description: "An upgraded version of GPT-5 with better logical reasoning. Excellent for tasks that require step-by-step thinking and careful analysis.",
     bestFor: ['Logical reasoning', 'Step-by-step analysis', 'Technical tasks'],
   },
+  'openai/gpt-5.2-chat': {
+    tagline: "Optimized for dialogue and evaluation",
+    description: "A specialized version of GPT-5.2 fine-tuned for conversational analysis and peer review. Excellent at evaluating and critiquing other responses with structured feedback.",
+    bestFor: ['Peer review', 'Response evaluation', 'Structured critique'],
+  },
+  'openai/gpt-5.2-pro': {
+    tagline: "Premium executive-tier synthesis",
+    description: "OpenAI's most powerful model for high-stakes decision making. Designed for executives and critical decisions where quality matters more than cost. Exceptional synthesis capabilities.",
+    bestFor: ['Executive decisions', 'High-stakes synthesis', 'Premium quality'],
+  },
+  'openai/gpt-5.1-codex-max': {
+    tagline: "Deep code reasoning specialist",
+    description: "Optimized for code analysis, architecture reviews, and complex refactoring decisions. Perfect as a synthesizer for technical councils discussing software challenges.",
+    bestFor: ['Code analysis', 'Architecture review', 'Technical synthesis'],
+  },
   'openai/gpt-5-mini': {
     tagline: "Fast and efficient OpenAI model",
     description: "A lighter version of GPT-5 that's quick and cost-effective. Perfect for straightforward tasks where speed matters more than maximum depth.",
@@ -125,6 +140,11 @@ export const modelDescriptions: Record<string, ModelDescription> = {
     description: "Google's most capable model with massive context support. Excellent for complex reasoning and can process enormous amounts of information at once.",
     bestFor: ['Complex reasoning', 'Massive context', 'Premium quality'],
   },
+  'google/gemini-3-pro-preview': {
+    tagline: "Next-gen Google AI with 1M+ context",
+    description: "Google's latest flagship model with exceptional long-context understanding. Preview access to cutting-edge capabilities for comprehensive analysis and synthesis.",
+    bestFor: ['Long-context analysis', 'Comprehensive review', 'Cutting-edge AI'],
+  },
 
   // xAI Grok Models
   'x-ai/grok-3-mini': {
@@ -137,6 +157,16 @@ export const modelDescriptions: Record<string, ModelDescription> = {
     description: "Can process up to 2 million words with rapid response times. Ideal for analyzing very large documents quickly without waiting.",
     bestFor: ['Massive documents', 'Speed', 'Large context'],
   },
+  'x-ai/grok-4.1-fast': {
+    tagline: "Latest Grok with 2M token context",
+    description: "The newest Grok model optimized for speed while maintaining quality. Excellent as a contrarian voice or devil's advocate with its unique perspective and huge context window.",
+    bestFor: ['Huge context', 'Fast responses', "Devil's advocate"],
+  },
+  'x-ai/grok-code-fast-1': {
+    tagline: "Lightning-fast code reasoning",
+    description: "Specialized for rapid code analysis and programming discussions. Perfect for technical councils where you need quick code insights without sacrificing quality.",
+    bestFor: ['Code review', 'Technical discussions', 'Fast code reasoning'],
+  },
 
   // Meta Models
   'meta-llama/llama-3.3-70b-instruct': {
@@ -147,8 +177,18 @@ export const modelDescriptions: Record<string, ModelDescription> = {
 
   // DeepSeek Models
   'deepseek/deepseek-v3.2': {
-    tagline: "Efficient reasoning specialist",
-    description: "Known for efficient, focused responses. Offers exceptional value with competitive reasoning capabilities. Great for cost-conscious councils.",
-    bestFor: ['Value for money', 'Focused analysis', 'Cost-effective'],
+    tagline: "Best-value reasoning specialist",
+    description: "Known for efficient, focused responses with exceptional value. Strong reasoning capabilities at a fraction of premium model costs. Great for balanced councils.",
+    bestFor: ['Value for money', 'Focused analysis', 'Balanced councils'],
+  },
+  'deepseek/deepseek-v3.2-exp': {
+    tagline: "Experimental cutting-edge reasoning",
+    description: "Preview access to DeepSeek's latest experimental features. Offers innovative reasoning approaches at minimal cost. Perfect for exploring new AI capabilities.",
+    bestFor: ['Experimental features', 'Cost savings', 'Innovation'],
+  },
+  'deepseek/deepseek-v3.1-terminus': {
+    tagline: "Sharp logic and critical analysis",
+    description: "Optimized for critical evaluation and finding flaws in arguments. Exceptional at providing constructive criticism and identifying logical issues.",
+    bestFor: ['Critical analysis', 'Finding flaws', 'Constructive criticism'],
   },
 };
