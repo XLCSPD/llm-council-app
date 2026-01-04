@@ -126,15 +126,20 @@ class RunnerService:
             council_config=council_config,
         )
 
-        # Create run_models for each council member
-        for member in request.council.members:
-            await self.db.create_run_model(
-                run_id=UUID(run["id"]),
-                model_key=member.model_key,
-                display_name=member.display_name,
-                role=member.role.value,
-                weight=member.weight,
-            )
+        # Create run_models for each council member (batch insert for better performance)
+        models_data = [
+            {
+                "model_key": member.model_key,
+                "display_name": member.display_name,
+                "role": member.role.value,
+                "weight": member.weight,
+            }
+            for member in request.council.members
+        ]
+        await self.db.create_run_models_batch(
+            run_id=UUID(run["id"]),
+            models=models_data,
+        )
 
         return run
 
@@ -346,7 +351,9 @@ class RunnerService:
         # Execute reviews in parallel
         results = await self.llm.complete_parallel(requests)
 
-        # Parse and store reviews
+        # Parse and store reviews - collect all reviews for batch insert
+        all_peer_reviews: list[dict] = []
+
         for mapping, result in zip(review_mapping, results):
             if isinstance(result, Exception):
                 continue
@@ -374,13 +381,17 @@ class RunnerService:
                     None
                 )
                 if reviewed:
-                    await self.db.create_peer_review(
-                        run_id=run_id,
-                        reviewer_run_model_id=reviewer_id,
-                        reviewed_run_model_id=UUID(reviewed["run_model_id"]),
-                        score=score_data["score"],
-                        rationale=score_data.get("rationale"),
-                    )
+                    all_peer_reviews.append({
+                        "run_id": run_id,
+                        "reviewer_run_model_id": reviewer_id,
+                        "reviewed_run_model_id": UUID(reviewed["run_model_id"]),
+                        "score": score_data["score"],
+                        "rationale": score_data.get("rationale"),
+                    })
+
+        # Batch insert all peer reviews for better performance
+        if all_peer_reviews:
+            await self.db.create_peer_reviews_batch(all_peer_reviews)
 
         await self.db.update_run_phase_status(run_id, 3, completed=True)
 

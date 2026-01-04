@@ -461,12 +461,13 @@ export function SynthesisPhase() {
     // Initial fetch
     fetchRunStatus();
 
-    // Fallback poll every 10 seconds (Realtime handles most updates)
+    // Fallback poll every 30 seconds (Realtime handles most updates)
+    // Reduced frequency since Realtime is the primary update mechanism
     const interval = setInterval(() => {
       if (runData?.current_phase === 4 && runData?.status === 'running') {
         fetchRunStatus();
       }
-    }, 10000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [currentRunId, fetchRunStatus, runData?.current_phase, runData?.status]);

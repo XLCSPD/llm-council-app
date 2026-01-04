@@ -113,7 +113,9 @@ export function useRealtimeRun({
             }
           }
         )
-        // Subscribe to model_outputs (new outputs)
+        // Subscribe to model_outputs (new outputs) - filtered by run_model_ids
+        // Note: We can't directly filter by run_id since model_outputs references run_model_id
+        // Instead, we filter client-side after getting the run_model_ids
         .on(
           'postgres_changes',
           {
@@ -124,9 +126,15 @@ export function useRealtimeRun({
           async (payload: RealtimePostgresChangesPayload<ModelOutput>) => {
             const newOutput = payload.new as ModelOutput;
 
-            // Check if this output belongs to our run
+            // Check if this output belongs to our run by checking run_model_id
             setRun((prev) => {
               if (!prev) return null;
+
+              // Get all run_model_ids for this run
+              const runModelIds = new Set(prev.run_models.map(rm => rm.id));
+
+              // Skip if this output doesn't belong to our run
+              if (!runModelIds.has(newOutput.run_model_id)) return prev;
 
               const modelIndex = prev.run_models.findIndex(
                 (rm) => rm.id === newOutput.run_model_id
@@ -137,6 +145,10 @@ export function useRealtimeRun({
               const updatedModels = [...prev.run_models];
               const existingModel = updatedModels[modelIndex];
               if (!existingModel) return prev;
+
+              // Check for duplicate outputs
+              const existingOutputIds = new Set(existingModel.model_outputs.map(o => o.id));
+              if (existingOutputIds.has(newOutput.id)) return prev;
 
               updatedModels[modelIndex] = {
                 ...existingModel,
@@ -152,7 +164,7 @@ export function useRealtimeRun({
             onModelOutput?.(newOutput);
           }
         )
-        // Subscribe to peer_reviews
+        // Subscribe to peer_reviews (filtered by run_id)
         .on(
           'postgres_changes',
           {
@@ -163,9 +175,15 @@ export function useRealtimeRun({
           },
           (payload: RealtimePostgresChangesPayload<PeerReview>) => {
             const newReview = payload.new as PeerReview;
-            setRun((prev) =>
-              prev ? { ...prev, peer_reviews: [...prev.peer_reviews, newReview] } : null
-            );
+            setRun((prev) => {
+              if (!prev) return null;
+
+              // Check for duplicate reviews
+              const existingReviewIds = new Set(prev.peer_reviews.map(r => r.id));
+              if (existingReviewIds.has(newReview.id)) return prev;
+
+              return { ...prev, peer_reviews: [...prev.peer_reviews, newReview] };
+            });
             onPeerReview?.(newReview);
           }
         )

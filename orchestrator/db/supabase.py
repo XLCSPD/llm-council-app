@@ -157,6 +157,37 @@ class SupabaseClient:
         result = self._client.table("run_models").insert(data).execute()
         return result.data[0]
 
+    async def create_run_models_batch(
+        self,
+        run_id: UUID,
+        models: list[dict],
+    ) -> list[dict]:
+        """Create multiple run_model records in a single batch operation.
+
+        Args:
+            run_id: The run ID to associate models with
+            models: List of dicts with keys: model_key, display_name, role, weight (optional)
+
+        Returns:
+            List of created run_model records
+        """
+        if not models:
+            return []
+
+        data = [
+            {
+                "run_id": str(run_id),
+                "model_key": m["model_key"],
+                "display_name": m["display_name"],
+                "role": m["role"],
+                "weight": m.get("weight", 1.0),
+                "status": "pending",
+            }
+            for m in models
+        ]
+        result = self._client.table("run_models").insert(data).execute()
+        return result.data
+
     async def update_run_model(self, run_model_id: UUID, **updates) -> dict:
         """Update a run_model record."""
         data = {k: str(v) if isinstance(v, UUID) else v for k, v in updates.items()}
@@ -221,6 +252,35 @@ class SupabaseClient:
         }
         result = self._client.table("peer_reviews").insert(data).execute()
         return result.data[0]
+
+    async def create_peer_reviews_batch(
+        self,
+        reviews: list[dict],
+    ) -> list[dict]:
+        """Create multiple peer review records in a single batch operation.
+
+        Args:
+            reviews: List of dicts with keys: run_id, reviewer_run_model_id,
+                     reviewed_run_model_id, score, rationale (optional)
+
+        Returns:
+            List of created peer_review records
+        """
+        if not reviews:
+            return []
+
+        data = [
+            {
+                "run_id": str(r["run_id"]),
+                "reviewer_run_model_id": str(r["reviewer_run_model_id"]),
+                "reviewed_run_model_id": str(r["reviewed_run_model_id"]),
+                "score": r["score"],
+                "rationale": r.get("rationale"),
+            }
+            for r in reviews
+        ]
+        result = self._client.table("peer_reviews").insert(data).execute()
+        return result.data
 
     async def get_peer_reviews(self, run_id: UUID) -> list[dict]:
         """Get all peer reviews for a run."""

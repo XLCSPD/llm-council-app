@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, memo } from 'react';
 
 interface GlassCardProps {
   children: ReactNode;
@@ -22,7 +22,8 @@ const paddingClasses = {
   lg: 'p-6',
 };
 
-export function GlassCard({
+// Memoized to prevent unnecessary re-renders in list contexts
+export const GlassCard = memo(function GlassCard({
   children,
   className = '',
   variant = 'default',
@@ -42,4 +43,4 @@ export function GlassCard({
       {children}
     </div>
   );
-}
+});

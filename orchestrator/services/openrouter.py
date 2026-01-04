@@ -1,6 +1,8 @@
 """OpenRouter API client for LLM calls."""
 
 import asyncio
+import logging
+import random
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import AsyncIterator, Optional
@@ -9,6 +11,8 @@ import time
 import httpx
 
 from config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,13 +35,47 @@ class StreamChunk:
     metadata: Optional[dict] = None
 
 
+# Retry configuration
+MAX_RETRIES = 3
+INITIAL_BACKOFF_MS = 1000  # 1 second
+MAX_BACKOFF_MS = 30000  # 30 seconds
+BACKOFF_MULTIPLIER = 2.0
+JITTER_FACTOR = 0.1  # 10% jitter
+
+# Rate limiting - max concurrent requests to OpenRouter
+MAX_CONCURRENT_REQUESTS = 10
+
+
+def calculate_backoff(attempt: int) -> float:
+    """Calculate exponential backoff with jitter."""
+    backoff_ms = min(
+        INITIAL_BACKOFF_MS * (BACKOFF_MULTIPLIER ** attempt),
+        MAX_BACKOFF_MS
+    )
+    # Add jitter to prevent thundering herd
+    jitter = backoff_ms * JITTER_FACTOR * (2 * random.random() - 1)
+    return (backoff_ms + jitter) / 1000  # Convert to seconds
+
+
+def is_retryable_error(error: Exception) -> bool:
+    """Determine if an error is retryable."""
+    if isinstance(error, httpx.HTTPStatusError):
+        # Retry on rate limits (429), server errors (5xx)
+        status = error.response.status_code
+        return status == 429 or status >= 500
+    if isinstance(error, (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout)):
+        return True
+    return False
+
+
 class OpenRouterClient:
-    """Client for OpenRouter API."""
+    """Client for OpenRouter API with retry logic and rate limiting."""
 
     def __init__(self, api_key: str, base_url: str = "https://openrouter.ai/api/v1"):
         self.api_key = api_key
         self.base_url = base_url
         self._client: Optional[httpx.AsyncClient] = None
+        self._semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create async HTTP client."""
@@ -66,7 +104,23 @@ class OpenRouterClient:
         max_tokens: Optional[int] = None,
         temperature: float = 0.7,
     ) -> CompletionResult:
-        """Make a completion request to OpenRouter."""
+        """Make a completion request to OpenRouter with retry logic."""
+        async with self._semaphore:  # Rate limiting
+            return await self._complete_with_retry(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+
+    async def _complete_with_retry(
+        self,
+        model: str,
+        messages: list[dict],
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.7,
+    ) -> CompletionResult:
+        """Make a completion request with exponential backoff retry."""
         client = await self._get_client()
         start_time = time.perf_counter()
 
@@ -78,21 +132,43 @@ class OpenRouterClient:
         if max_tokens:
             payload["max_tokens"] = max_tokens
 
-        response = await client.post("/chat/completions", json=payload)
-        response.raise_for_status()
-        data = response.json()
+        last_error: Optional[Exception] = None
 
-        latency_ms = int((time.perf_counter() - start_time) * 1000)
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                response = await client.post("/chat/completions", json=payload)
+                response.raise_for_status()
+                data = response.json()
 
-        usage = data.get("usage", {})
-        return CompletionResult(
-            content=data["choices"][0]["message"]["content"],
-            prompt_tokens=usage.get("prompt_tokens", 0),
-            completion_tokens=usage.get("completion_tokens", 0),
-            total_tokens=usage.get("total_tokens", 0),
-            latency_ms=latency_ms,
-            model=data.get("model"),
-        )
+                latency_ms = int((time.perf_counter() - start_time) * 1000)
+
+                usage = data.get("usage", {})
+                return CompletionResult(
+                    content=data["choices"][0]["message"]["content"],
+                    prompt_tokens=usage.get("prompt_tokens", 0),
+                    completion_tokens=usage.get("completion_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0),
+                    latency_ms=latency_ms,
+                    model=data.get("model"),
+                )
+
+            except Exception as e:
+                last_error = e
+
+                if attempt < MAX_RETRIES and is_retryable_error(e):
+                    backoff = calculate_backoff(attempt)
+                    logger.warning(
+                        f"OpenRouter request failed (attempt {attempt + 1}/{MAX_RETRIES + 1}), "
+                        f"retrying in {backoff:.2f}s: {e}"
+                    )
+                    await asyncio.sleep(backoff)
+                else:
+                    # Non-retryable error or max retries exceeded
+                    break
+
+        # All retries exhausted
+        logger.error(f"OpenRouter request failed after {MAX_RETRIES + 1} attempts: {last_error}")
+        raise last_error  # type: ignore
 
     async def stream_complete(
         self,

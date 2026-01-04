@@ -1,18 +1,46 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, lazy, Suspense } from 'react';
 import { MainLayout } from '@/components/layout';
 import { AuthGuard, ResetPasswordPage } from '@/components/auth';
 import { TourOverlay } from '@/components/ui';
 import { useSessionStore, useCouncilStore, useAuthStore, useUIStore, useHelpStore } from '@/store';
 import { modelsApi } from '@/api';
 import { supabase } from '@/lib/supabase';
-import { SetupPhase } from '@/features/council-builder/components/SetupPhase';
-import { ReasoningPhase } from '@/features/reasoning';
-import { ReviewPhase } from '@/features/review';
-import { SynthesisPhase } from '@/features/synthesis';
-import { SettingsPage } from '@/features/settings';
-import { HelpPage } from '@/features/help';
-import { CommandPalette, useCommandPalette } from '@/features/decision-memory';
+import { useCommandPalette } from '@/features/decision-memory';
 import type { SessionSummary, ModelInfo } from '@/types';
+
+// Lazy load phase components for code splitting
+const SetupPhase = lazy(() =>
+  import('@/features/council-builder/components/SetupPhase').then(m => ({ default: m.SetupPhase }))
+);
+const ReasoningPhase = lazy(() =>
+  import('@/features/reasoning').then(m => ({ default: m.ReasoningPhase }))
+);
+const ReviewPhase = lazy(() =>
+  import('@/features/review').then(m => ({ default: m.ReviewPhase }))
+);
+const SynthesisPhase = lazy(() =>
+  import('@/features/synthesis').then(m => ({ default: m.SynthesisPhase }))
+);
+const SettingsPage = lazy(() =>
+  import('@/features/settings').then(m => ({ default: m.SettingsPage }))
+);
+const HelpPage = lazy(() =>
+  import('@/features/help').then(m => ({ default: m.HelpPage }))
+);
+const CommandPalette = lazy(() =>
+  import('@/features/decision-memory').then(m => ({ default: m.CommandPalette }))
+);
+
+// Loading fallback component
+function PhaseLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-[60vh]">
+      <div className="animate-pulse">
+        <div className="w-12 h-12 rounded-xl bg-gradient-accent opacity-50" />
+      </div>
+    </div>
+  );
+}
 
 // Fallback models when backend API is unavailable - Updated Jan 2026
 const FALLBACK_MODELS: ModelInfo[] = [
@@ -149,27 +177,41 @@ function AppContent() {
   const renderPhase = () => {
     // Check for help view first
     if (currentView === 'help') {
-      return <HelpPage />;
+      return (
+        <Suspense fallback={<PhaseLoadingFallback />}>
+          <HelpPage />
+        </Suspense>
+      );
     }
 
     // Check for settings view
     if (currentView === 'settings') {
-      return <SettingsPage />;
+      return (
+        <Suspense fallback={<PhaseLoadingFallback />}>
+          <SettingsPage />
+        </Suspense>
+      );
     }
 
     console.log('[App] renderPhase called with currentPhase:', currentPhase);
-    switch (currentPhase) {
-      case 'setup':
-        return <SetupPhase />;
-      case 'reasoning':
-        return <ReasoningPhase />;
-      case 'review':
-        return <ReviewPhase />;
-      case 'synthesis':
-        return <SynthesisPhase />;
-      default:
-        return <SetupPhase />;
-    }
+    return (
+      <Suspense fallback={<PhaseLoadingFallback />}>
+        {(() => {
+          switch (currentPhase) {
+            case 'setup':
+              return <SetupPhase />;
+            case 'reasoning':
+              return <ReasoningPhase />;
+            case 'review':
+              return <ReviewPhase />;
+            case 'synthesis':
+              return <SynthesisPhase />;
+            default:
+              return <SetupPhase />;
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   // Add key to force React to remount phase components when switching
@@ -181,7 +223,9 @@ function AppContent() {
         </div>
       </MainLayout>
       <TourOverlay />
-      <CommandPalette />
+      <Suspense fallback={null}>
+        <CommandPalette />
+      </Suspense>
     </>
   );
 }

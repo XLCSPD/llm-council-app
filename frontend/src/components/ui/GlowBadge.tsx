@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, memo } from 'react';
 
 type BadgeVariant = 'teal' | 'cyan' | 'success' | 'warning' | 'error' | 'thinker' | 'critic' | 'devils-advocate' | 'synthesizer' | 'tier-fast' | 'tier-balanced' | 'tier-deep' | 'tier-executive' | 'tier-code' | 'tier-critic';
 
@@ -95,7 +95,8 @@ const sizeClasses = {
   lg: 'px-4 py-1.5 text-base',
 };
 
-export function GlowBadge({
+// Memoized to prevent unnecessary re-renders in list contexts
+export const GlowBadge = memo(function GlowBadge({
   children,
   variant = 'teal',
   size = 'md',
@@ -118,4 +119,4 @@ export function GlowBadge({
       {children}
     </span>
   );
-}
+});
