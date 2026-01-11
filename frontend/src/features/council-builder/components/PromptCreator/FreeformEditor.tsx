@@ -4,6 +4,7 @@ import { useSessionStore, useCouncilStore } from '@/store';
 import { orchestratorApi, type PromptEnhanceResponse } from '@/api/orchestrator';
 import { AttachmentUploader } from './AttachmentUploader';
 import { VisionWarning } from './VisionWarning';
+import { VoiceInputButton } from '@/components/ui/VoiceInputButton';
 import type { PromptAttachment } from '@/types';
 
 interface FreeformEditorProps {
@@ -137,15 +138,27 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
             </button>
           </div>
         </div>
-        <textarea
-          data-tour="prompt-input"
-          value={prompt.content}
-          onChange={(e) => updatePrompt({ content: e.target.value })}
-          placeholder="What would you like the council to deliberate on?"
-          className="w-full h-32 px-4 py-3 rounded-lg border border-border bg-bg-primary
-                   text-text-primary placeholder:text-text-muted resize-none
-                   focus:border-border-focus focus:ring-1 focus:ring-border-focus transition-colors"
-        />
+        <div className="relative">
+          <textarea
+            data-tour="prompt-input"
+            value={prompt.content}
+            onChange={(e) => updatePrompt({ content: e.target.value })}
+            placeholder="What would you like the council to deliberate on?"
+            className="w-full h-32 px-4 py-3 pr-12 rounded-lg border border-border bg-bg-primary
+                     text-text-primary placeholder:text-text-muted resize-none
+                     focus:border-border-focus focus:ring-1 focus:ring-border-focus transition-colors"
+          />
+          <div className="absolute right-3 bottom-3 z-10">
+            <VoiceInputButton
+              onTranscribe={(text) => {
+                updatePrompt({
+                  content: prompt.content + (prompt.content ? ' ' : '') + text,
+                });
+              }}
+              size="md"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Enhance error */}
@@ -157,9 +170,15 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
 
       {/* Objective */}
       <div data-tour="prompt-fields">
-        <label className="block text-sm font-medium text-text-secondary mb-1.5">
-          Objective (Optional)
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-sm font-medium text-text-secondary">
+            Objective (Optional)
+          </label>
+          <VoiceInputButton
+            onTranscribe={(text) => updatePrompt({ objective: text })}
+            size="sm"
+          />
+        </div>
         <input
           type="text"
           value={prompt.objective || ''}
@@ -173,9 +192,15 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
 
       {/* Target Audience */}
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1.5">
-          Target Audience (Optional)
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-sm font-medium text-text-secondary">
+            Target Audience (Optional)
+          </label>
+          <VoiceInputButton
+            onTranscribe={(text) => updatePrompt({ audience: text })}
+            size="sm"
+          />
+        </div>
         <input
           type="text"
           value={prompt.audience || ''}
@@ -189,9 +214,19 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
 
       {/* Context */}
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1.5">
-          Context (Optional)
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-sm font-medium text-text-secondary">
+            Context (Optional)
+          </label>
+          <VoiceInputButton
+            onTranscribe={(text) => {
+              updatePrompt({
+                context: (prompt.context || '') + (prompt.context ? '\n' : '') + text,
+              });
+            }}
+            size="sm"
+          />
+        </div>
         <textarea
           value={prompt.context || ''}
           onChange={(e) => updatePrompt({ context: e.target.value || null })}
@@ -204,9 +239,17 @@ export function FreeformEditor({ onEnhanceStart, onEnhanceComplete }: FreeformEd
 
       {/* Constraints */}
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1.5">
-          Constraints (Optional)
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-sm font-medium text-text-secondary">
+            Constraints (Optional)
+          </label>
+          <VoiceInputButton
+            onTranscribe={(text) => {
+              updatePrompt({ constraints: [...prompt.constraints, text.trim()] });
+            }}
+            size="sm"
+          />
+        </div>
         <div className="space-y-2">
           {prompt.constraints.map((constraint, index) => (
             <div key={index} className="flex items-center gap-2">

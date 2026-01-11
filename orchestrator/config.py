@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     openrouter_api_key: str
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
+    # OpenAI (for Whisper transcription)
+    openai_api_key: str = ""  # Optional - required for voice transcription
+
     # App settings
     app_name: str = "LLM Council Orchestrator"
     debug: bool = False

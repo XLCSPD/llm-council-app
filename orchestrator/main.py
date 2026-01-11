@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 from uuid import UUID
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Header
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -19,6 +19,7 @@ from models.schemas import (
 )
 from services.runner import get_runner_service
 from services.prompt_enhancer import enhance_prompt, EnhancedPrompt
+from services.whisper import transcribe_audio, TranscriptionError
 
 
 @asynccontextmanager
@@ -249,6 +250,48 @@ async def cancel_run(run_id: UUID):
         current_phase=0,
         message="Run cancellation requested",
     )
+
+
+# =============================================================================
+# Voice Transcription Endpoint
+# =============================================================================
+
+
+class TranscribeResponse(BaseModel):
+    """Response from audio transcription."""
+    text: str
+
+
+@app.post("/api/transcribe", response_model=TranscribeResponse)
+async def transcribe_audio_endpoint(
+    audio: UploadFile = File(..., description="Audio file to transcribe"),
+):
+    """
+    Transcribe audio to text using OpenAI Whisper.
+
+    Accepts audio files in common formats: webm, wav, mp3, mp4, m4a, ogg, flac.
+    Maximum file size: 25MB.
+    Recommended maximum duration: 60 seconds.
+
+    Returns:
+        TranscribeResponse with transcribed text.
+    """
+    # Read the audio file
+    audio_data = await audio.read()
+
+    try:
+        text = await transcribe_audio(
+            audio_data=audio_data,
+            filename=audio.filename or "audio.webm",
+            content_type=audio.content_type or "audio/webm",
+        )
+        return TranscribeResponse(text=text)
+
+    except TranscriptionError as e:
+        raise HTTPException(
+            status_code=e.status_code or 500,
+            detail=str(e),
+        )
 
 
 # =============================================================================

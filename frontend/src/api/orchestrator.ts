@@ -67,6 +67,10 @@ export interface PromptEnhanceResponse {
   improvements: string[];
 }
 
+export interface TranscribeResponse {
+  text: string;
+}
+
 export const orchestratorApi = {
   // Health check
   health: async () => {
@@ -101,6 +105,28 @@ export const orchestratorApi = {
     const response = await orchestratorClient.post<PromptEnhanceResponse>(
       '/api/prompts/enhance',
       request
+    );
+    return response.data;
+  },
+
+  // Transcribe audio to text using Whisper
+  transcribe: async (audioBlob: Blob): Promise<TranscribeResponse> => {
+    const formData = new FormData();
+    // Determine filename based on blob type
+    const extension = audioBlob.type.includes('webm') ? 'webm' :
+                      audioBlob.type.includes('wav') ? 'wav' :
+                      audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
+    formData.append('audio', audioBlob, `recording.${extension}`);
+
+    const response = await orchestratorClient.post<TranscribeResponse>(
+      '/api/transcribe',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000, // 30 second timeout for transcription
+      }
     );
     return response.data;
   },
