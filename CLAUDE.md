@@ -120,6 +120,7 @@ DEBUG=true
 - **PhaseStatus**: `'pending' | 'running' | 'completed' | 'failed' | 'skipped'`
 - **SessionStatus**: `'draft' | 'running' | 'completed' | 'failed'`
 - **CouncilPreset**: `'fast' | 'balanced' | 'deep_analysis' | 'executive'`
+- **ModelTier**: `'fast' | 'balanced' | 'deep' | 'executive' | 'code' | 'critic'` - Model categorization
 
 Key interfaces: `Session`, `CouncilMember`, `PromptConfig`, `ModelOutput`, `PeerReview`, `SynthesisOutput`, `PromptAttachment`
 
@@ -185,6 +186,7 @@ The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to
 - `src/features/decision-memory/` - Command palette, smart history, council templates, session annotations
 - `src/api/orchestrator.ts` - Orchestrator API client
 - `src/hooks/useRealtimeRun.ts` - Supabase realtime subscription hook
+- `src/hooks/useReplayMode.ts` - Access historical session data in phase components
 - `src/hooks/useVoiceRecording.ts` - Browser audio recording hook
 - `src/components/ui/VoiceInputButton.tsx` - Reusable voice input button
 - `src/lib/supabase.ts` - Supabase client configuration
@@ -222,6 +224,14 @@ For Playwright MCP testing and development:
 Email: claudecodetest@gmail.com
 Password: TestPassword123!
 ```
+
+## Deployment
+
+### Vercel (Frontend)
+The frontend deploys to Vercel. **Important**: In Vercel Project Settings → General, set **Root Directory** to `frontend` since this is a monorepo.
+
+### Orchestrator
+Deploy separately (Railway, Fly.io, etc.) with `OPENAI_API_KEY` for voice transcription support.
 
 ## Notes
 

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to LLM Council</title>
+  <style>
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #F8FAFC;
+      color: #1A365D;
+      line-height: 1.6;
+    }
+
+    /* Container */
+    .email-container {
+      max-width: 680px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0A1628 0%, #152238 100%);
+      padding: 48px 40px;
+      text-align: center;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      color: #FFFFFF;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #5EEAD4;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    /* Content */
+    .content {
+      padding: 40px;
+    }
+
+    .greeting {
+      font-size: 20px;
+      color: #1A365D;
+      margin-bottom: 24px;
+    }
+
+    .intro {
+      font-size: 16px;
+      color: #64748B;
+      margin-bottom: 32px;
+    }
+
+    /* Value Prop Box */
+    .value-box {
+      background: linear-gradient(135deg, #0D9488 0%, #5EEAD4 100%);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 36px;
+      color: #FFFFFF;
+    }
+
+    .value-box h2 {
+      font-size: 22px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .value-box p {
+      font-size: 15px;
+      opacity: 0.95;
+      margin-bottom: 12px;
+    }
+
+    .value-box .highlight {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #E2E8F0;
+    }
+
+    .section-number {
+      background: #0D9488;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .section-header h3 {
+      font-size: 20px;
+      color: #1A365D;
+    }
+
+    /* Steps */
+    .steps {
+      margin-bottom: 36px;
+    }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: #F8FAFC;
+      border-radius: 10px;
+      border-left: 4px solid #0D9488;
+    }
+
+    .step-number {
+      background: #E2E8F0;
+      color: #0D9488;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content strong {
+      color: #1A365D;
+    }
+
+    .step-content span {
+      color: #64748B;
+      font-size: 14px;
+    }
+
+    .alt-option {
+      background: #FEF3C7;
+      border-left-color: #F59E0B;
+      font-style: italic;
+      font-size: 14px;
+      color: #92400E;
+    }
+
+    /* Screenshot */
+    .screenshot-container {
+      margin: 28px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      border: 1px solid #E2E8F0;
+    }
+
+    .screenshot-container img {
+      width: 100%;
+      display: block;
+    }
+
+    .screenshot-caption {
+      background: #F1F5F9;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #64748B;
+      text-align: center;
+    }
+
+    /* Four Phases */
+    .phases {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 28px 0;
+    }
+
+    .phase {
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .phase-setup {
+      background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+      color: white;
+    }
+
+    .phase-reasoning {
+      background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
+      color: white;
+    }
+
+    .phase-review {
+      background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+      color: white;
+    }
+
+    .phase-synthesis {
+      background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+      color: white;
+    }
+
+    .phase-number {
+      font-size: 28px;
+      font-weight: 800;
+      opacity: 0.5;
+    }
+
+    .phase-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 4px 0;
+    }
+
+    .phase-desc {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* Quick Tips Table */
+    .tips-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    .tips-table th {
+      background: #0D9488;
+      color: white;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .tips-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .tips-table tr:nth-child(even) {
+      background: #F8FAFC;
+    }
+
+    .tips-table code {
+      background: #E2E8F0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    /* CTA Button */
+    .cta-container {
+      text-align: center;
+      margin: 36px 0;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+      color: white !important;
+      text-decoration: none;
+      padding: 16px 48px;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(13, 148, 136, 0.5);
+    }
+
+    /* Pro Tip */
+    .pro-tip {
+      background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+      border: 1px solid #86EFAC;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 28px 0;
+    }
+
+    .pro-tip-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: #166534;
+      margin-bottom: 8px;
+    }
+
+    .pro-tip p {
+      color: #166534;
+      font-size: 14px;
+    }
+
+    /* Footer */
+    .footer {
+      background: #0A1628;
+      padding: 32px 40px;
+      text-align: center;
+    }
+
+    .footer p {
+      color: #94A3B8;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .footer .team {
+      color: #5EEAD4;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .footer .tagline {
+      color: #FFFFFF;
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .content { padding: 24px; }
+      .header { padding: 32px 24px; }
+      .header h1 { font-size: 26px; }
+      .phases { grid-template-columns: 1fr; }
+      .value-box { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div style="padding: 20px; background: #F8FAFC;">
+    <div class="email-container">
+
+      <!-- Header -->
+      <div class="header">
+        <img src="https://frontend-phi-black-hybffec8kj.vercel.app/logo.png" alt="LLM Council" class="logo">
+        <h1>LLM Council</h1>
+        <p>Multi-agent AI deliberation platform</p>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+
+        <p class="greeting">Hey [Name]! &#128075;</p>
+
+        <p class="intro">
+          You've been invited to <strong>LLM Council</strong> – a platform where multiple AI models debate your toughest questions and deliver answers you can actually trust.
+        </p>
+
+        <!-- Value Proposition -->
+        <div class="value-box">
+          <h2>&#129302; Why LLM Council?</h2>
+          <p>
+            Ever asked an AI a complex question and wondered if the answer was <em>really</em> the best one? We did too. So we built a council.
+          </p>
+          <p>
+            <strong>Here's how it works:</strong> You ask a question, and a team of AI models independently reason through it, critique each other's thinking, and synthesize a final answer with confidence levels.
+          </p>
+          <div class="highlight">
+            &#128161; Think of it as a boardroom of AI experts debating on your behalf.
+          </div>
+        </div>
+
+        <!-- The Four Phases -->
+        <div class="section-header">
+          <div class="section-number">&#9889;</div>
+          <h3>The Four Phases</h3>
+        </div>
+
+        <div class="phases">
+          <div class="phase phase-setup">
+            <div class="phase-number">1</div>
+            <div class="phase-name">Setup</div>
+            <div class="phase-desc">Configure your prompt & council</div>
+          </div>
+          <div class="phase phase-reasoning">
+            <div class="phase-number">2</div>
+            <div class="phase-name">Reasoning</div>
+            <div class="phase-desc">Models think independently</div>
+          </div>
+          <div class="phase phase-review">
+            <div class="phase-number">3</div>
+            <div class="phase-name">Review</div>
+            <div class="phase-desc">Models critique each other</div>
+          </div>
+          <div class="phase phase-synthesis">
+            <div class="phase-number">4</div>
+            <div class="phase-name">Synthesis</div>
+            <div class="phase-desc">Final answer with confidence</div>
+          </div>
+        </div>
+
+        <!-- Getting Started -->
+        <div class="section-header">
+          <div class="section-number">1</div>
+          <h3>Create Your Account</h3>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <strong>Go to the app</strong><br>
+              <span>Visit <a href="https://frontend-phi-black-hybffec8kj.vercel.app/" style="color: #0D9488;">frontend-phi-black-hybffec8kj.vercel.app</a></span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <strong>Click "Create Account"</strong><br>
+              <span>Enter your email and choose a password</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <strong>You're in!</strong><br>
+              <span>Start creating your first council</span>
+            </div>
+          </div>
+          <div class="step alt-option">
+            <div class="step-number">&#10024;</div>
+            <div class="step-content">
+              <strong>Prefer passwordless?</strong> Click "Use magic link instead" and we'll email you a sign-in link.
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual hint instead of screenshot -->
+        <div style="background: linear-gradient(135deg, #0A1628 0%, #152238 100%); border-radius: 12px; padding: 24px; text-align: center; margin: 28px 0;">
+          <div style="color: #5EEAD4; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Sign In / Create Account</div>
+          <div style="color: #FFFFFF; font-size: 18px; font-weight: 600;">Email + Password <span style="color: #94A3B8;">or</span> Magic Link</div>
+          <div style="color: #94A3B8; font-size: 13px; margin-top: 8px;">&#128072; Two easy options to get started</div>
+        </div>
+
+        <!-- Create Session -->
+        <div class="section-header">
+          <div class="section-number">2</div>
+          <h3>Create Your First Session</h3>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <strong>Type your question</strong><br>
+              <span>What would you like the council to deliberate on?</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <strong>Add context</strong> (optional)<br>
+              <span>Objectives, audience, constraints – help guide the council</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <strong>Select AI models</strong><br>
+              <span>Build your council from 30+ models (GPT, Claude, Gemini, and more)</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <strong>Assign roles</strong><br>
+              <span><strong>Thinker</strong>, <strong>Critic</strong>, <strong>Devil's Advocate</strong>, or <strong>Chair</strong></span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <strong>Start Deliberation</strong><br>
+              <span>Watch the magic happen in real-time!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual hint instead of screenshot -->
+        <div style="background: linear-gradient(135deg, #0A1628 0%, #152238 100%); border-radius: 12px; padding: 24px; text-align: center; margin: 28px 0;">
+          <div style="color: #5EEAD4; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">The Setup Dashboard</div>
+          <div style="color: #FFFFFF; font-size: 18px; font-weight: 600;">Prompt Editor + Model Selector + Role Assignment</div>
+          <div style="color: #94A3B8; font-size: 13px; margin-top: 8px;">&#127919; Everything you need in one clean interface</div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="section-header">
+          <div class="section-number">3</div>
+          <h3>Quick Navigation Tips</h3>
+        </div>
+
+        <table class="tips-table">
+          <tr>
+            <th>What You Want</th>
+            <th>Where to Find It</th>
+          </tr>
+          <tr>
+            <td>Start a new deliberation</td>
+            <td><strong>+ button</strong> in sidebar</td>
+          </tr>
+          <tr>
+            <td>Search past sessions</td>
+            <td><code>&#8984;K</code> / <code>Ctrl+K</code></td>
+          </tr>
+          <tr>
+            <td>Export results as PDF</td>
+            <td><strong>Export PDF</strong> button after completion</td>
+          </tr>
+          <tr>
+            <td>Save council setup</td>
+            <td><strong>Save as Template</strong> for reuse</td>
+          </tr>
+          <tr>
+            <td>Switch themes</td>
+            <td><strong>&#9790;</strong> icon in header</td>
+          </tr>
+        </table>
+
+        <!-- Pro Tip -->
+        <div class="pro-tip">
+          <div class="pro-tip-header">
+            &#10024; Pro Tip
+          </div>
+          <p>
+            Click <strong>"Enhance with AI"</strong> to get AI-powered suggestions for improving your prompt before deliberation. It'll suggest clearer phrasing, objectives, and constraints!
+          </p>
+        </div>
+
+        <!-- CTA -->
+        <div class="cta-container">
+          <a href="https://frontend-phi-black-hybffec8kj.vercel.app/" class="cta-button">
+            Get Started Now &#8594;
+          </a>
+        </div>
+
+        <p style="text-align: center; color: #64748B; font-size: 14px; margin-top: 20px;">
+          Questions? Just reply to this email – we're happy to help!
+        </p>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>Welcome to smarter AI conversations.</p>
+        <div class="team">– The EveryDAI Team</div>
+        <div class="tagline">&#129302; Better decisions through structured disagreement</div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
