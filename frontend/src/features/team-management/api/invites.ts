@@ -68,7 +68,20 @@ export async function getOrgInvites(
     throw new Error('Failed to fetch invites');
   }
 
-  return (invites || []).map((i) => ({
+  // Type assertion for untyped table
+  type InviteRow = {
+    id: string;
+    org_id: string;
+    email: string;
+    role: string;
+    status: string;
+    invited_by: string;
+    expires_at: string;
+    accepted_at: string | null;
+    created_at: string;
+  };
+
+  return ((invites || []) as InviteRow[]).map((i) => ({
     id: i.id,
     org_id: i.org_id,
     email: i.email,
@@ -76,6 +89,7 @@ export async function getOrgInvites(
     status: i.status as Invite['status'],
     invited_by: i.invited_by,
     expires_at: i.expires_at,
+    accepted_at: i.accepted_at,
     created_at: i.created_at,
   }));
 }
@@ -117,10 +131,18 @@ export async function getOrgMembers(
   // For other members, we'll show a placeholder
   const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-  return (members || []).map((m) => ({
+  // Type assertion for untyped table
+  type MemberRow = {
+    id: string;
+    user_id: string;
+    role: string;
+    created_at: string;
+  };
+
+  return ((members || []) as MemberRow[]).map((m) => ({
     id: m.id,
     user_id: m.user_id,
-    email: m.user_id === currentUser?.id ? currentUser.email || 'Unknown' : 'Team Member',
+    email: m.user_id === currentUser?.id ? (currentUser.email ?? 'Unknown') : 'Team Member',
     role: m.role as OrgMember['role'],
     created_at: m.created_at,
   }));
