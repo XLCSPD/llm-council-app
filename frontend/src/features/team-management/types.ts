@@ -12,6 +12,7 @@ export interface Invite {
   id: string;
   org_id: string;
   email: string;
+  name?: string;
   role: InviteRole;
   status: InviteStatus;
   invited_by: string;
@@ -37,4 +38,5 @@ export interface InviteCreateRequest {
   org_id: string;
   email: string;
   role: InviteRole;
+  name?: string;
 }

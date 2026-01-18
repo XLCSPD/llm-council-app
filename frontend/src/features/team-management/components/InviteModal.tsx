@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Loader2, Mail, Shield, AlertCircle, CheckCircle, Users } from 'lucide-react';
+import { X, Send, Loader2, Mail, Shield, AlertCircle, CheckCircle, Users, User } from 'lucide-react';
 import { createInvite } from '../api/invites';
 import type { Invite, InviteRole } from '../types';
 
@@ -27,6 +27,7 @@ export function InviteModal({
   userId,
   onInviteCreated,
 }: InviteModalProps) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('member');
   const [isSending, setIsSending] = useState(false);
@@ -48,7 +49,7 @@ export function InviteModal({
 
     try {
       const invite = await createInvite(
-        { org_id: orgId, email: email.toLowerCase().trim(), role },
+        { org_id: orgId, email: email.toLowerCase().trim(), role, name: name.trim() || undefined },
         userId
       );
 
@@ -68,6 +69,7 @@ export function InviteModal({
   };
 
   const handleClose = () => {
+    setName('');
     setEmail('');
     setRole('member');
     setError(null);
@@ -137,12 +139,41 @@ export function InviteModal({
                   <h3 className="text-lg font-medium text-slate-200 mb-2">Invite Sent!</h3>
                   <p className="text-sm text-slate-400">
                     An invitation email has been sent to{' '}
-                    <span className="text-slate-200 font-medium">{email}</span>
+                    <span className="text-slate-200 font-medium">
+                      {name ? `${name} (${email})` : email}
+                    </span>
                   </p>
                 </motion.div>
               ) : (
                 /* Form */
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                  {/* Name Input */}
+                  <div>
+                    <label
+                      htmlFor="invite-name"
+                      className="block text-sm font-medium text-slate-300 mb-2"
+                    >
+                      Name <span className="text-slate-500 text-xs font-normal">(optional)</span>
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        id="invite-name"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Their first name"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl
+                          bg-slate-700/50 border border-slate-600
+                          text-slate-200 placeholder-slate-500
+                          focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20
+                          transition-colors"
+                        autoFocus
+                        autoComplete="given-name"
+                      />
+                    </div>
+                  </div>
+
                   {/* Email Input */}
                   <div>
                     <label
@@ -167,7 +198,6 @@ export function InviteModal({
                           text-slate-200 placeholder-slate-500
                           focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20
                           transition-colors"
-                        autoFocus
                         autoComplete="email"
                       />
                     </div>

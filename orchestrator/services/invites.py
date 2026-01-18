@@ -18,6 +18,7 @@ async def create_invite(
     role: str,
     invited_by: UUID,
     redirect_url: Optional[str] = None,
+    name: Optional[str] = None,
 ) -> dict:
     """Create an invite and send invitation email via Supabase Auth.
 
@@ -27,6 +28,7 @@ async def create_invite(
         role: Role to assign ('admin' or 'member')
         invited_by: User ID of the inviter
         redirect_url: Optional redirect URL after email verification
+        name: Optional name of the invitee for personalized email
 
     Returns:
         Created invite record
@@ -68,15 +70,19 @@ async def create_invite(
         raise InviteError("An invite is already pending for this email address")
 
     # Create invite record
+    invite_data = {
+        "org_id": str(org_id),
+        "email": email_lower,
+        "role": role,
+        "invited_by": str(invited_by),
+        "status": "pending",
+    }
+    if name:
+        invite_data["name"] = name.strip()
+
     invite_result = (
         client.table("org_invites")
-        .insert({
-            "org_id": str(org_id),
-            "email": email_lower,
-            "role": role,
-            "invited_by": str(invited_by),
-            "status": "pending",
-        })
+        .insert(invite_data)
         .execute()
     )
 
@@ -91,15 +97,20 @@ async def create_invite(
     base_url = redirect_url or "http://localhost:5173"
 
     try:
+        # Build user metadata for the invite
+        user_data = {
+            "invite_id": invite["id"],
+            "org_id": str(org_id),
+            "role": role,
+        }
+        if name:
+            user_data["name"] = name.strip()
+
         client.auth.admin.invite_user_by_email(
             email_lower,
             options={
                 "redirect_to": f"{base_url}/auth/callback?invite={invite['id']}",
-                "data": {
-                    "invite_id": invite["id"],
-                    "org_id": str(org_id),
-                    "role": role,
-                }
+                "data": user_data
             }
         )
     except Exception as e:

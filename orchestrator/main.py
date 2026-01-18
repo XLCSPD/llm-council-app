@@ -313,6 +313,7 @@ class InviteCreateRequest(BaseModel):
     org_id: UUID
     email: str
     role: str = "member"  # 'admin' or 'member'
+    name: Optional[str] = None  # Invitee's name for personalized email
 
 
 class InviteResponse(BaseModel):
@@ -374,6 +375,7 @@ async def create_invite_endpoint(
             role=request.role,
             invited_by=user_id,
             redirect_url=x_redirect_url,
+            name=request.name,
         )
         return InviteResponse(
             id=UUID(invite["id"]),

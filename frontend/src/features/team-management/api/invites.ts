@@ -73,6 +73,7 @@ export async function getOrgInvites(
     id: string;
     org_id: string;
     email: string;
+    name: string | null;
     role: string;
     status: string;
     invited_by: string;
@@ -85,6 +86,7 @@ export async function getOrgInvites(
     id: i.id,
     org_id: i.org_id,
     email: i.email,
+    name: i.name ?? undefined,
     role: i.role as Invite['role'],
     status: i.status as Invite['status'],
     invited_by: i.invited_by,
