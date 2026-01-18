@@ -101,6 +101,10 @@ export function SetupPhase() {
     useCouncilStore();
   const { user } = useAuthStore();
   const { isReplayMode, replayData, modelInfo } = useReplayMode();
+
+  // Ensure availableModels is always an array (defensive check for async loading)
+  const safeModels = Array.isArray(availableModels) ? availableModels : [];
+
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,8 +119,8 @@ export function SetupPhase() {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       return null;
     }
-    return searchModels(availableModels, searchQuery);
-  }, [searchQuery, availableModels]);
+    return searchModels(safeModels, searchQuery);
+  }, [searchQuery, safeModels]);
 
   // Reset highlight when results change
   useEffect(() => {
@@ -159,13 +163,13 @@ export function SetupPhase() {
   // Group models by tier for organized display
   const groupedModels = useMemo(() => {
     const groups: Partial<Record<ModelTier, ModelInfo[]>> = {};
-    availableModels.forEach(model => {
+    safeModels.forEach(model => {
       const tier = model.tier || 'balanced';
       if (!groups[tier]) groups[tier] = [];
       groups[tier]!.push(model);
     });
     return groups;
-  }, [availableModels]);
+  }, [safeModels]);
 
   // Render read-only view for replay mode
   if (isReplayMode && replayData) {
