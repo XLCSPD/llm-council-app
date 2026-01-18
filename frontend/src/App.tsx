@@ -124,7 +124,13 @@ function AppContent() {
 
         // Load available models
         const models = await modelsApi.list();
-        setAvailableModels(models);
+        // Validate response is actually an array before setting
+        if (Array.isArray(models) && models.length > 0) {
+          setAvailableModels(models);
+        } else {
+          console.warn('Models API returned invalid data, using fallback');
+          setAvailableModels(FALLBACK_MODELS);
+        }
       } catch (error) {
         console.error('Failed to load initial data:', error);
         // Use fallback models when backend API is unavailable
