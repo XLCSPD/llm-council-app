@@ -37,21 +37,22 @@ export function TeamSection() {
           user_uuid: user.id,
         } as unknown as undefined);
 
-        // Get user's org membership
+        // Get user's org membership (use limit(1) in case user has multiple orgs)
         const { data: membershipData, error: membershipError } = await supabase
           .from('org_members')
           .select('org_id, role')
           .eq('user_id', user.id)
-          .single();
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-        if (membershipError || !membershipData) {
+        if (membershipError || !membershipData || membershipData.length === 0) {
           console.error('Org membership query failed:', membershipError);
           setError('Could not find your organization');
           setIsLoading(false);
           return;
         }
 
-        const membership = membershipData as { org_id: string; role: MemberRole };
+        const membership = membershipData[0] as { org_id: string; role: MemberRole };
         setCurrentUserRole(membership.role);
 
         // Get org details
