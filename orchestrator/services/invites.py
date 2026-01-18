@@ -94,7 +94,8 @@ async def create_invite(
     # Send invitation email via Supabase Auth Admin API
     # This creates the user if they don't exist and sends a magic link
     settings = get_settings()
-    base_url = redirect_url or "http://localhost:5173"
+    # Use provided redirect_url, fall back to configured frontend_url
+    base_url = redirect_url.strip() if redirect_url else settings.frontend_url
 
     try:
         # Build user metadata for the invite
@@ -195,23 +196,68 @@ async def resend_invite(invite_id: UUID, redirect_url: Optional[str] = None) -> 
 
     invite = invite_result.data
     settings = get_settings()
-    base_url = redirect_url or "http://localhost:5173"
+    # Use provided redirect_url, fall back to configured frontend_url
+    base_url = redirect_url.strip() if redirect_url else settings.frontend_url
 
     # Resend via Supabase Auth
+    # Build user metadata for the invite
+    user_data = {
+        "invite_id": str(invite_id),
+        "org_id": invite["org_id"],
+        "role": invite["role"],
+    }
+    if invite.get("name"):
+        user_data["name"] = invite["name"]
+
+    redirect_to = f"{base_url}/auth/callback?invite={invite_id}"
+
+    # Try to send invite - if user exists, handle accordingly
     try:
         client.auth.admin.invite_user_by_email(
             invite["email"],
             options={
-                "redirect_to": f"{base_url}/auth/callback?invite={invite_id}",
-                "data": {
-                    "invite_id": str(invite_id),
-                    "org_id": invite["org_id"],
-                    "role": invite["role"],
-                }
+                "redirect_to": redirect_to,
+                "data": user_data
             }
         )
     except Exception as e:
-        raise InviteError(f"Failed to resend invitation email: {str(e)}")
+        error_str = str(e).lower()
+        # Check if error is because user already exists
+        if "already registered" in error_str or "already been registered" in error_str or "user already exists" in error_str:
+            # Try to find and handle existing user
+            try:
+                users_response = client.auth.admin.list_users()
+                users_list = getattr(users_response, 'users', None) or users_response or []
+
+                for user in users_list:
+                    user_email = getattr(user, 'email', None)
+                    if user_email and user_email.lower() == invite["email"].lower():
+                        # Check if confirmed
+                        if getattr(user, 'email_confirmed_at', None):
+                            raise InviteError("User has already registered. They can log in directly.")
+
+                        # Delete unconfirmed user and retry
+                        user_id = getattr(user, 'id', None)
+                        if user_id:
+                            client.auth.admin.delete_user(user_id)
+                            # Retry invite
+                            client.auth.admin.invite_user_by_email(
+                                invite["email"],
+                                options={
+                                    "redirect_to": redirect_to,
+                                    "data": user_data
+                                }
+                            )
+                            return invite
+
+                # Couldn't find user, raise original error
+                raise InviteError(f"Failed to resend: {str(e)}")
+            except InviteError:
+                raise
+            except Exception as inner_e:
+                raise InviteError(f"Failed to resend invitation email: {str(inner_e)}")
+        else:
+            raise InviteError(f"Failed to resend invitation email: {str(e)}")
 
     return invite
 
