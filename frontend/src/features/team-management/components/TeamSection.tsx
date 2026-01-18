@@ -52,7 +52,7 @@ export function TeamSection() {
           return;
         }
 
-        const membership = membershipData[0] as { org_id: string; role: MemberRole };
+        const membership = membershipData[0] as unknown as { org_id: string; role: MemberRole };
         setCurrentUserRole(membership.role);
 
         // Get org details
