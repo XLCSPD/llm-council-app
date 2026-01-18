@@ -29,7 +29,7 @@
     }
 
     .email-container {
-      max-width: 600px;
+      max-width: 680px;
       margin: 0 auto;
       background: #FFFFFF;
       border-radius: 16px;
@@ -39,65 +39,98 @@
 
     .header {
       background: linear-gradient(135deg, #0A1628 0%, #152238 100%);
-      padding: 40px 32px;
+      padding: 48px 40px;
       text-align: center;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
     }
 
     .header h1 {
       color: #FFFFFF;
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 700;
       margin-bottom: 8px;
     }
 
     .header p {
       color: #5EEAD4;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
     }
 
     .content {
-      padding: 32px;
+      padding: 40px;
     }
 
     .greeting {
       font-size: 20px;
       color: #1A365D;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
     }
 
     .intro {
-      font-size: 15px;
+      font-size: 16px;
       color: #64748B;
-      margin-bottom: 28px;
+      margin-bottom: 32px;
     }
 
     .value-box {
-      background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+      background: linear-gradient(135deg, #0D9488 0%, #5EEAD4 100%);
       border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 28px;
+      padding: 28px;
+      margin-bottom: 36px;
       color: #FFFFFF;
     }
 
     .value-box h2 {
-      font-size: 18px;
-      margin-bottom: 12px;
+      font-size: 22px;
+      margin-bottom: 16px;
     }
 
     .value-box p {
-      font-size: 14px;
+      font-size: 15px;
       opacity: 0.95;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
 
     .value-box .highlight {
       background: rgba(255, 255, 255, 0.2);
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-radius: 8px;
       font-weight: 600;
-      margin-top: 12px;
-      font-size: 13px;
+      margin-top: 16px;
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #E2E8F0;
+    }
+
+    .section-number {
+      background: #0D9488;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .section-header h3 {
+      font-size: 20px;
+      color: #1A365D;
     }
 
     /* Four Phases - Table-based for email compatibility */
@@ -105,12 +138,12 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 8px;
-      margin: 24px 0;
+      margin: 28px 0;
     }
 
     .phase {
-      padding: 16px;
-      border-radius: 8px;
+      padding: 20px;
+      border-radius: 10px;
       text-align: center;
       color: white;
     }
@@ -121,25 +154,100 @@
     .phase-synthesis { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
 
     .phase-number {
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 800;
       opacity: 0.5;
     }
 
     .phase-name {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
       margin: 4px 0;
     }
 
     .phase-desc {
-      font-size: 11px;
+      font-size: 12px;
       opacity: 0.9;
+    }
+
+    /* Steps */
+    .steps {
+      margin-bottom: 36px;
+    }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: #F8FAFC;
+      border-radius: 10px;
+      border-left: 4px solid #0D9488;
+    }
+
+    .step-number {
+      background: #E2E8F0;
+      color: #0D9488;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content strong {
+      color: #1A365D;
+    }
+
+    .step-content span {
+      color: #64748B;
+      font-size: 14px;
+    }
+
+    /* Quick Tips Table */
+    .tips-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    .tips-table th {
+      background: #0D9488;
+      color: white;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .tips-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .tips-table tr:nth-child(even) {
+      background: #F8FAFC;
+    }
+
+    .tips-table code {
+      background: #E2E8F0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
     }
 
     .cta-container {
       text-align: center;
-      margin: 32px 0;
+      margin: 36px 0;
     }
 
     .cta-button {
@@ -147,9 +255,9 @@
       background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
       color: white !important;
       text-decoration: none;
-      padding: 16px 40px;
+      padding: 16px 48px;
       border-radius: 50px;
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
       box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4);
     }
@@ -158,58 +266,57 @@
       background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
       border: 1px solid #86EFAC;
       border-radius: 10px;
-      padding: 16px;
-      margin: 24px 0;
+      padding: 20px;
+      margin: 28px 0;
     }
 
     .pro-tip-header {
       font-weight: 700;
       color: #166534;
-      margin-bottom: 6px;
-      font-size: 13px;
+      margin-bottom: 8px;
     }
 
     .pro-tip p {
       color: #166534;
-      font-size: 13px;
+      font-size: 14px;
     }
 
     .footer {
       background: #0A1628;
-      padding: 24px 32px;
+      padding: 32px 40px;
       text-align: center;
     }
 
     .footer p {
       color: #94A3B8;
-      font-size: 13px;
-      margin-bottom: 12px;
+      font-size: 14px;
+      margin-bottom: 16px;
     }
 
     .footer .team {
       color: #5EEAD4;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 16px;
     }
 
     .footer .tagline {
       color: #FFFFFF;
-      font-size: 14px;
+      font-size: 18px;
       font-weight: 600;
-      margin-top: 16px;
+      margin-top: 20px;
     }
 
     .help-text {
       text-align: center;
-      color: #94A3B8;
-      font-size: 12px;
-      margin-top: 16px;
+      color: #64748B;
+      font-size: 14px;
+      margin-top: 20px;
     }
 
     @media (max-width: 600px) {
       .content { padding: 24px; }
       .header { padding: 32px 24px; }
-      .header h1 { font-size: 24px; }
+      .header h1 { font-size: 26px; }
       .value-box { padding: 20px; }
     }
   </style>
@@ -220,6 +327,7 @@
 
       <!-- Header -->
       <div class="header">
+        <img src="https://frontend-phi-black-hybffec8kj.vercel.app/logo.png" alt="LLM Council" class="logo">
         <h1>LLM Council</h1>
         <p>Multi-agent AI deliberation platform</p>
       </div>
@@ -237,7 +345,10 @@
         <div class="value-box">
           <h2>&#129302; Why LLM Council?</h2>
           <p>
-            You ask a question, and a team of AI models independently reason through it, critique each other's thinking, and synthesize a final answer with confidence levels.
+            Ever asked an AI a complex question and wondered if the answer was <em>really</em> the best one? We did too. So we built a council.
+          </p>
+          <p>
+            <strong>Here's how it works:</strong> You ask a question, and a team of AI models independently reason through it, critique each other's thinking, and synthesize a final answer with confidence levels.
           </p>
           <div class="highlight">
             &#128161; Think of it as a boardroom of AI experts debating on your behalf.
@@ -245,30 +356,120 @@
         </div>
 
         <!-- The Four Phases -->
+        <div class="section-header">
+          <div class="section-number">&#9889;</div>
+          <h3>The Four Phases</h3>
+        </div>
+
         <table class="phases-table">
           <tr>
             <td class="phase phase-setup">
               <div class="phase-number">1</div>
               <div class="phase-name">Setup</div>
-              <div class="phase-desc">Configure prompt</div>
+              <div class="phase-desc">Configure your prompt & council</div>
             </td>
             <td class="phase phase-reasoning">
               <div class="phase-number">2</div>
               <div class="phase-name">Reasoning</div>
-              <div class="phase-desc">Models think</div>
+              <div class="phase-desc">Models think independently</div>
             </td>
           </tr>
           <tr>
             <td class="phase phase-review">
               <div class="phase-number">3</div>
               <div class="phase-name">Review</div>
-              <div class="phase-desc">Peer critique</div>
+              <div class="phase-desc">Models critique each other</div>
             </td>
             <td class="phase phase-synthesis">
               <div class="phase-number">4</div>
               <div class="phase-name">Synthesis</div>
-              <div class="phase-desc">Final answer</div>
+              <div class="phase-desc">Final answer with confidence</div>
             </td>
+          </tr>
+        </table>
+
+        <!-- CTA Button - Primary -->
+        <div class="cta-container">
+          <a href="{{ .ConfirmationURL }}" class="cta-button">
+            Accept Invite & Get Started &#8594;
+          </a>
+        </div>
+
+        <p class="help-text">
+          Click the button above to create your account and join the team.<br>
+          <em>This link will expire in 7 days.</em>
+        </p>
+
+        <!-- Create Session Section -->
+        <div class="section-header" style="margin-top: 36px;">
+          <div class="section-number">&#127919;</div>
+          <h3>Create Your First Session</h3>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <strong>Type your question</strong><br>
+              <span>What would you like the council to deliberate on?</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <strong>Add context</strong> (optional)<br>
+              <span>Objectives, audience, constraints – help guide the council</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <strong>Select AI models</strong><br>
+              <span>Build your council from 30+ models (GPT, Claude, Gemini, and more)</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <strong>Assign roles</strong><br>
+              <span><strong>Thinker</strong>, <strong>Critic</strong>, <strong>Devil's Advocate</strong>, or <strong>Chair</strong></span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <strong>Start Deliberation</strong><br>
+              <span>Watch the magic happen in real-time!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="section-header">
+          <div class="section-number">&#128640;</div>
+          <h3>Quick Navigation Tips</h3>
+        </div>
+
+        <table class="tips-table">
+          <tr>
+            <th>What You Want</th>
+            <th>Where to Find It</th>
+          </tr>
+          <tr>
+            <td>Start a new deliberation</td>
+            <td><strong>+ button</strong> in sidebar</td>
+          </tr>
+          <tr>
+            <td>Search past sessions</td>
+            <td><code>&#8984;K</code> / <code>Ctrl+K</code></td>
+          </tr>
+          <tr>
+            <td>Export results as PDF</td>
+            <td><strong>Export PDF</strong> button after completion</td>
+          </tr>
+          <tr>
+            <td>Save council setup</td>
+            <td><strong>Save as Template</strong> for reuse</td>
           </tr>
         </table>
 
@@ -278,11 +479,11 @@
             &#10024; Pro Tip
           </div>
           <p>
-            Try <strong>"Enhance with AI"</strong> to get suggestions for improving your prompt before deliberation!
+            Click <strong>"Enhance with AI"</strong> to get AI-powered suggestions for improving your prompt before deliberation. It'll suggest clearer phrasing, objectives, and constraints!
           </p>
         </div>
 
-        <!-- CTA -->
+        <!-- Secondary CTA -->
         <div class="cta-container">
           <a href="{{ .ConfirmationURL }}" class="cta-button">
             Accept Invite &#8594;
@@ -290,7 +491,7 @@
         </div>
 
         <p class="help-text">
-          This link will expire in 7 days. Click the button above to create your account and join the team.
+          Questions? Just reply to this email – we're happy to help!
         </p>
 
       </div>
