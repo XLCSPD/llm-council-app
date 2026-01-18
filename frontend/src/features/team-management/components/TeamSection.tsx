@@ -32,6 +32,11 @@ export function TeamSection() {
       setError(null);
 
       try {
+        // First, ensure user has a workspace set up
+        await supabase.rpc('setup_user_workspace', {
+          user_uuid: user.id,
+        } as unknown as undefined);
+
         // Get user's org membership
         const { data: membershipData, error: membershipError } = await supabase
           .from('org_members')
@@ -40,6 +45,7 @@ export function TeamSection() {
           .single();
 
         if (membershipError || !membershipData) {
+          console.error('Org membership query failed:', membershipError);
           setError('Could not find your organization');
           setIsLoading(false);
           return;
