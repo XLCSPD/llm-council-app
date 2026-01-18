@@ -20,6 +20,15 @@ from models.schemas import (
 from services.runner import get_runner_service
 from services.prompt_enhancer import enhance_prompt, EnhancedPrompt
 from services.whisper import transcribe_audio, TranscriptionError
+from services.invites import (
+    create_invite,
+    get_org_invites,
+    cancel_invite,
+    resend_invite,
+    get_org_members,
+    verify_org_admin,
+    InviteError,
+)
 
 
 @asynccontextmanager
@@ -292,6 +301,182 @@ async def transcribe_audio_endpoint(
             status_code=e.status_code or 500,
             detail=str(e),
         )
+
+
+# =============================================================================
+# Invite Endpoints
+# =============================================================================
+
+
+class InviteCreateRequest(BaseModel):
+    """Request body for creating an invite."""
+    org_id: UUID
+    email: str
+    role: str = "member"  # 'admin' or 'member'
+
+
+class InviteResponse(BaseModel):
+    """Response for invite operations."""
+    id: UUID
+    org_id: UUID
+    email: str
+    role: str
+    status: str
+    expires_at: str
+    created_at: str
+
+
+class InviteListResponse(BaseModel):
+    """Response for listing invites."""
+    invites: list[dict]
+
+
+class OrgMembersResponse(BaseModel):
+    """Response for listing org members."""
+    members: list[dict]
+
+
+@app.post("/api/invites", response_model=InviteResponse)
+async def create_invite_endpoint(
+    request: InviteCreateRequest,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    x_redirect_url: Optional[str] = Header(None, alias="X-Redirect-URL"),
+):
+    """Create and send an organization invite.
+
+    Requires X-User-ID header. User must be org admin/owner.
+    Sends invitation email via Supabase Auth.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    try:
+        user_id = UUID(x_user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid X-User-ID format")
+
+    # Verify user is org admin
+    is_admin = await verify_org_admin(request.org_id, user_id)
+    if not is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="You must be an organization admin or owner to send invites"
+        )
+
+    # Validate role
+    if request.role not in ("admin", "member"):
+        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'member'")
+
+    try:
+        invite = await create_invite(
+            org_id=request.org_id,
+            email=request.email,
+            role=request.role,
+            invited_by=user_id,
+            redirect_url=x_redirect_url,
+        )
+        return InviteResponse(
+            id=UUID(invite["id"]),
+            org_id=UUID(invite["org_id"]),
+            email=invite["email"],
+            role=invite["role"],
+            status=invite["status"],
+            expires_at=invite["expires_at"],
+            created_at=invite["created_at"],
+        )
+    except InviteError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create invite: {str(e)}")
+
+
+@app.get("/api/orgs/{org_id}/invites", response_model=InviteListResponse)
+async def list_invites_endpoint(
+    org_id: UUID,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """List all invites for an organization.
+
+    Requires X-User-ID header. User must be org admin/owner.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    try:
+        user_id = UUID(x_user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid X-User-ID format")
+
+    # Verify user is org admin
+    is_admin = await verify_org_admin(org_id, user_id)
+    if not is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="You must be an organization admin or owner to view invites"
+        )
+
+    invites = await get_org_invites(org_id)
+    return InviteListResponse(invites=invites)
+
+
+@app.get("/api/orgs/{org_id}/members", response_model=OrgMembersResponse)
+async def list_members_endpoint(
+    org_id: UUID,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """List all members of an organization.
+
+    Requires X-User-ID header. User must be org member.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    members = await get_org_members(org_id)
+    return OrgMembersResponse(members=members)
+
+
+@app.post("/api/invites/{invite_id}/cancel")
+async def cancel_invite_endpoint(
+    invite_id: UUID,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Cancel a pending invite.
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    success = await cancel_invite(invite_id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Invite not found or already processed"
+        )
+
+    return {"success": True, "message": "Invite canceled"}
+
+
+@app.post("/api/invites/{invite_id}/resend")
+async def resend_invite_endpoint(
+    invite_id: UUID,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    x_redirect_url: Optional[str] = Header(None, alias="X-Redirect-URL"),
+):
+    """Resend an invite email.
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    try:
+        invite = await resend_invite(invite_id, redirect_url=x_redirect_url)
+        return {"success": True, "message": "Invite resent", "invite": invite}
+    except InviteError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to resend invite: {str(e)}")
 
 
 # =============================================================================

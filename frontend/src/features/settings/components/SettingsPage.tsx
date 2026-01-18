@@ -5,6 +5,7 @@ import { APISettingsSection } from './APISettingsSection';
 import { ModelDefaultsSection } from './ModelDefaultsSection';
 import { PreferencesSection } from './PreferencesSection';
 import { AccountSection } from './AccountSection';
+import { TeamSection } from '@/features/team-management';
 
 export function SettingsPage() {
   const setCurrentView = useUIStore((state) => state.setCurrentView);
@@ -62,6 +63,15 @@ export function SettingsPage() {
             Account
           </h2>
           <AccountSection />
+        </GlassCard>
+
+        {/* Team Management */}
+        <GlassCard variant="default" padding="lg">
+          <h2 className="text-lg font-semibold text-text-primary mb-6 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-gradient-accent rounded-full" />
+            Team
+          </h2>
+          <TeamSection />
         </GlassCard>
       </div>
     </div>
