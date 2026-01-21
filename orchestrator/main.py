@@ -29,6 +29,15 @@ from services.invites import (
     verify_org_admin,
     InviteError,
 )
+from services.analytics import (
+    check_platform_admin,
+    verify_analytics_access,
+    get_analytics_summary,
+    get_usage_analytics,
+    get_cost_analytics,
+    get_model_analytics,
+    AnalyticsError,
+)
 
 
 @asynccontextmanager
@@ -479,6 +488,171 @@ async def resend_invite_endpoint(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to resend invite: {str(e)}")
+
+
+# =============================================================================
+# Analytics Endpoints
+# =============================================================================
+
+
+@app.get("/api/admin/is-platform-admin")
+async def check_platform_admin_endpoint(
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Check if current user is a platform administrator.
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    try:
+        is_admin = await check_platform_admin(UUID(x_user_id))
+        return {"is_platform_admin": is_admin}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to check admin status: {str(e)}")
+
+
+@app.get("/api/analytics/summary")
+async def get_summary_endpoint(
+    org_id: Optional[UUID] = None,
+    time_range: str = "30d",
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get summary metrics for dashboard header cards.
+
+    Args:
+        org_id: Organization ID (omit for platform-wide, requires platform admin)
+        time_range: Time range - 7d, 30d, 90d, 1y (default: 30d)
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    user_id = UUID(x_user_id)
+
+    # Verify access
+    has_access = await verify_analytics_access(org_id, user_id)
+    if not has_access:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Platform-wide analytics requires platform admin."
+            if org_id is None else "Access denied. Must be org admin/owner."
+        )
+
+    try:
+        summary = await get_analytics_summary(org_id, time_range)
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get analytics summary: {str(e)}")
+
+
+@app.get("/api/analytics/usage")
+async def get_usage_endpoint(
+    org_id: Optional[UUID] = None,
+    time_range: str = "30d",
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get usage analytics with time series data.
+
+    Args:
+        org_id: Organization ID (omit for platform-wide, requires platform admin)
+        time_range: Time range - 7d, 30d, 90d, 1y (default: 30d)
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    user_id = UUID(x_user_id)
+
+    # Verify access
+    has_access = await verify_analytics_access(org_id, user_id)
+    if not has_access:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Platform-wide analytics requires platform admin."
+            if org_id is None else "Access denied. Must be org admin/owner."
+        )
+
+    try:
+        usage = await get_usage_analytics(org_id, time_range)
+        return usage
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get usage analytics: {str(e)}")
+
+
+@app.get("/api/analytics/costs")
+async def get_costs_endpoint(
+    org_id: Optional[UUID] = None,
+    time_range: str = "30d",
+    group_by: str = "model",
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get cost breakdown analytics.
+
+    Args:
+        org_id: Organization ID (omit for platform-wide, requires platform admin)
+        time_range: Time range - 7d, 30d, 90d, 1y (default: 30d)
+        group_by: Grouping - model, user, day (default: model)
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    user_id = UUID(x_user_id)
+
+    # Verify access
+    has_access = await verify_analytics_access(org_id, user_id)
+    if not has_access:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Platform-wide analytics requires platform admin."
+            if org_id is None else "Access denied. Must be org admin/owner."
+        )
+
+    try:
+        costs = await get_cost_analytics(org_id, time_range, group_by)
+        return costs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get cost analytics: {str(e)}")
+
+
+@app.get("/api/analytics/models")
+async def get_models_endpoint(
+    org_id: Optional[UUID] = None,
+    time_range: str = "30d",
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get model performance analytics.
+
+    Args:
+        org_id: Organization ID (omit for platform-wide, requires platform admin)
+        time_range: Time range - 7d, 30d, 90d, 1y (default: 30d)
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    user_id = UUID(x_user_id)
+
+    # Verify access
+    has_access = await verify_analytics_access(org_id, user_id)
+    if not has_access:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Platform-wide analytics requires platform admin."
+            if org_id is None else "Access denied. Must be org admin/owner."
+        )
+
+    try:
+        models = await get_model_analytics(org_id, time_range)
+        return models
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get model analytics: {str(e)}")
 
 
 # =============================================================================

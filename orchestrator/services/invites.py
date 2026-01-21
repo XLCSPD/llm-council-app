@@ -95,7 +95,7 @@ async def create_invite(
     # This creates the user if they don't exist and sends a magic link
     settings = get_settings()
     # Use provided redirect_url, fall back to configured frontend_url
-    base_url = redirect_url.strip() if redirect_url else settings.frontend_url
+    base_url = (redirect_url.strip() if redirect_url else settings.frontend_url).rstrip('/')
 
     try:
         # Build user metadata for the invite
@@ -197,7 +197,7 @@ async def resend_invite(invite_id: UUID, redirect_url: Optional[str] = None) -> 
     invite = invite_result.data
     settings = get_settings()
     # Use provided redirect_url, fall back to configured frontend_url
-    base_url = redirect_url.strip() if redirect_url else settings.frontend_url
+    base_url = (redirect_url.strip() if redirect_url else settings.frontend_url).rstrip('/')
 
     # Resend via Supabase Auth
     # Build user metadata for the invite

@@ -27,6 +27,9 @@ const SettingsPage = lazy(() =>
 const HelpPage = lazy(() =>
   import('@/features/help').then(m => ({ default: m.HelpPage }))
 );
+const AnalyticsPage = lazy(() =>
+  import('@/features/analytics').then(m => ({ default: m.AnalyticsPage }))
+);
 const CommandPalette = lazy(() =>
   import('@/features/decision-memory').then(m => ({ default: m.CommandPalette }))
 );
@@ -182,6 +185,14 @@ function AppContent() {
   // Render the appropriate phase component or settings/help
   const renderPhase = () => {
     // Check for help view first
+    if (currentView === 'analytics') {
+      return (
+        <Suspense fallback={<PhaseLoadingFallback />}>
+          <AnalyticsPage />
+        </Suspense>
+      );
+    }
+
     if (currentView === 'help') {
       return (
         <Suspense fallback={<PhaseLoadingFallback />}>

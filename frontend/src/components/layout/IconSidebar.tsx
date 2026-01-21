@@ -4,6 +4,7 @@ import {
   Settings,
   HelpCircle,
   Search,
+  BarChart3,
 } from 'lucide-react';
 import { useSessionStore, useUIStore, useDecisionMemoryStore } from '@/store';
 import { SmartHistoryPanel } from '@/features/decision-memory/components/SmartHistory';
@@ -111,6 +112,13 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
 
       {/* Bottom Section */}
       <div className="p-2 border-t border-glass-border space-y-1">
+        <NavItem
+          icon={<BarChart3 className="w-5 h-5" />}
+          label="Analytics"
+          isExpanded={isExpanded}
+          isActive={currentView === 'analytics'}
+          onClick={() => setCurrentView('analytics')}
+        />
         <NavItem
           icon={<HelpCircle className="w-5 h-5" />}
           label="Help"

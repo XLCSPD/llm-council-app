@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Mail, X, RefreshCw, Loader2, Clock, Shield } from 'lucide-react';
+import { Mail, X, RefreshCw, Loader2, Clock, Shield, AlertCircle } from 'lucide-react';
 import { cancelInvite, resendInvite } from '../api/invites';
 import type { Invite } from '../types';
 
@@ -35,6 +35,7 @@ export function PendingInvitesList({ invites, onCancel, userId }: PendingInvites
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resentIds, setResentIds] = useState<Set<string>>(new Set());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleCancel = async (invite: Invite) => {
     setCancelingId(invite.id);
@@ -50,6 +51,7 @@ export function PendingInvitesList({ invites, onCancel, userId }: PendingInvites
 
   const handleResend = async (invite: Invite) => {
     setResendingId(invite.id);
+    setErrorMessage(null);
     try {
       await resendInvite(invite.id, userId);
       // Show brief success state
@@ -63,6 +65,10 @@ export function PendingInvitesList({ invites, onCancel, userId }: PendingInvites
       }, 2000);
     } catch (err) {
       console.error('Failed to resend invite:', err);
+      const message = err instanceof Error ? err.message : 'Failed to resend invite';
+      setErrorMessage(message);
+      // Clear error after 5 seconds
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setResendingId(null);
     }
@@ -74,6 +80,13 @@ export function PendingInvitesList({ invites, onCancel, userId }: PendingInvites
 
   return (
     <div className="space-y-2">
+      {/* Error message */}
+      {errorMessage && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {errorMessage}
+        </div>
+      )}
       {invites.map((invite) => {
         const isExpiringSoon =
           new Date(invite.expires_at).getTime() < Date.now() + 24 * 60 * 60 * 1000;

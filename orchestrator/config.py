@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # App settings
     app_name: str = "LLM Council Orchestrator"
     debug: bool = False
+    frontend_url: str = "http://localhost:5173"  # Production URL should be set in env
 
     # Execution settings
     max_concurrent_models: int = 10

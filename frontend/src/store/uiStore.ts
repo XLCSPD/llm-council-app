@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 type Theme = 'light' | 'dark';
-type ViewMode = 'deliberation' | 'settings' | 'help';
+type ViewMode = 'deliberation' | 'settings' | 'help' | 'analytics';
 
 interface Toast {
   id: string;
