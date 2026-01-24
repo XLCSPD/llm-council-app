@@ -37,8 +37,8 @@ export default {
         'role-synthesizer': 'var(--color-role-synthesizer)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Poppins', 'system-ui', 'sans-serif'],
+        sans: ['General Sans', 'system-ui', 'sans-serif'],
+        display: ['Satoshi', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
@@ -65,6 +65,8 @@ export default {
         'glow-pulse': 'glowPulse 2s ease-in-out infinite',
         'gradient-shift': 'gradientShift 3s ease infinite',
         'float': 'float 6s ease-in-out infinite',
+        'float-delayed': 'floatDelayed 8s ease-in-out infinite 2s',
+        'float-slow': 'floatSlow 10s ease-in-out infinite 4s',
         'particle': 'particle 4s ease-in-out infinite',
       },
       keyframes: {
@@ -87,6 +89,14 @@ export default {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
+        },
+        floatDelayed: {
+          '0%, 100%': { transform: 'translateY(0) translateX(0)' },
+          '50%': { transform: 'translateY(-20px) translateX(10px)' },
+        },
+        floatSlow: {
+          '0%, 100%': { transform: 'translateY(0) scale(1)' },
+          '50%': { transform: 'translateY(-15px) scale(1.05)' },
         },
         particle: {
           '0%, 100%': { opacity: '0.5', transform: 'scale(1)' },

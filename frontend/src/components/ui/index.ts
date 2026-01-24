@@ -7,3 +7,5 @@ export { HelpTooltip } from './HelpTooltip';
 export { ModelTooltip } from './ModelTooltip';
 export { ModelSearchInput } from './ModelSearchInput';
 export { TourOverlay } from './TourOverlay';
+export { AnimatedBackground } from './AnimatedBackground';
+export { PhaseTransition } from './PhaseTransition';

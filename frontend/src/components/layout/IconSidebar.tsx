@@ -113,7 +113,7 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
           onClick={openCommandPalette}
           className={`
             w-full flex items-center gap-3 p-3 rounded-xl
-            text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50
+            text-text-primary/70 hover:text-text-primary hover:bg-bg-tertiary/50
             transition-colors group
             ${isExpanded ? '' : 'justify-center'}
           `}
@@ -199,8 +199,8 @@ function NavItem({ icon, label, isExpanded, isActive, onClick, dataTour }: NavIt
         transition-colors
         ${isExpanded ? '' : 'justify-center'}
         ${isActive
-          ? 'bg-accent/10 text-accent'
-          : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50'
+          ? 'bg-accent/20 text-accent'
+          : 'text-text-primary/70 hover:text-text-primary hover:bg-bg-tertiary/50'
         }
       `}
     >

@@ -29,7 +29,7 @@ export function GradientButton({
   const baseClasses = 'font-display font-semibold rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-2';
 
   const variantClasses = {
-    primary: `bg-gradient-accent text-white ${glow ? 'shadow-glow-teal hover:shadow-glow-cyan' : ''} hover:brightness-110`,
+    primary: `bg-gradient-accent text-white btn-shimmer ${glow ? 'shadow-glow-teal hover:shadow-glow-cyan' : ''} hover:brightness-110`,
     secondary: 'bg-bg-tertiary text-text-primary border border-glass-border hover:bg-bg-elevated',
     outline: 'bg-transparent border-2 border-accent text-accent hover:bg-accent/10',
   };

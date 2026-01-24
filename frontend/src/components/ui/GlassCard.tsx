@@ -3,7 +3,7 @@ import { ReactNode, memo } from 'react';
 interface GlassCardProps {
   children: ReactNode;
   className?: string;
-  variant?: 'default' | 'subtle' | 'strong';
+  variant?: 'default' | 'subtle' | 'strong' | 'elevated';
   hover?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   onClick?: () => void;
@@ -13,6 +13,7 @@ const variantClasses = {
   default: 'glass',
   subtle: 'glass-subtle',
   strong: 'glass-strong',
+  elevated: 'glass-elevated',
 };
 
 const paddingClasses = {
