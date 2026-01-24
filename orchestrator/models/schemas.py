@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class RunStatus(str, Enum):
@@ -52,6 +52,15 @@ class CouncilConfig(BaseModel):
         description="Model to use for synthesis. Defaults to first member."
     )
 
+    @field_validator("members")
+    @classmethod
+    def validate_max_one_chair(cls, v: List[CouncilMemberConfig]) -> List[CouncilMemberConfig]:
+        """Ensure at most one chair in the council."""
+        chair_count = sum(1 for m in v if m.role == ModelRole.CHAIR)
+        if chair_count > 1:
+            raise ValueError("Council can have at most 1 chair")
+        return v
+
 
 class PromptAttachment(BaseModel):
     """Attachment for a prompt (image or PDF)."""
@@ -80,6 +89,10 @@ class RunCreate(BaseModel):
     session_id: UUID
     prompt: PromptConfig
     council: CouncilConfig
+    auto_balance: bool = Field(
+        default=True,
+        description="Automatically add critic role if missing. If False, returns error for unbalanced councils."
+    )
 
 
 # Response schemas
@@ -143,9 +156,29 @@ class RunResponse(BaseModel):
         from_attributes = True
 
 
+class BalanceChangeResponse(BaseModel):
+    """Record of a change made during council auto-balancing."""
+    type: str = Field(..., description="Type of change: 'auto_assigned_critic' or 'injected_critic'")
+    model_key: str = Field(..., description="Model that was affected")
+    original_role: Optional[str] = Field(None, description="Original role before change (if reassigned)")
+    new_role: str = Field(..., description="New role assigned")
+    reason: str = Field(..., description="Explanation of why the change was made")
+
+
+class SuggestedFixResponse(BaseModel):
+    """Suggested fix for an unbalanced council when auto-balance is disabled."""
+    type: str = Field(..., description="Type of fix: 'assign_role' or 'inject_model'")
+    model_key: str = Field(..., description="Model to modify or inject")
+    recommended_role: str = Field(..., description="Recommended role to assign")
+
+
 class RunStatusResponse(BaseModel):
     """Simplified run status response."""
     id: UUID
     status: RunStatus
     current_phase: int
     message: Optional[str] = None
+    balance_changes: Optional[List[BalanceChangeResponse]] = Field(
+        default=None,
+        description="Changes made by auto-balancing (if any)"
+    )

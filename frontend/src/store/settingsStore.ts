@@ -13,12 +13,17 @@ interface SettingsState {
   showCostEstimates: boolean;
   showTokenCounts: boolean;
 
+  // Council Settings
+  /** Whether to auto-balance councils by adding critic when missing (default: true) */
+  autoBalanceCouncils: boolean;
+
   // Actions
   setOpenRouterApiKey: (key: string | null) => void;
   setDefaultTemperature: (temp: number) => void;
   setDefaultMaxTokens: (tokens: number) => void;
   setShowCostEstimates: (show: boolean) => void;
   setShowTokenCounts: (show: boolean) => void;
+  setAutoBalanceCouncils: (enabled: boolean) => void;
   resetToDefaults: () => void;
 }
 
@@ -28,6 +33,7 @@ const DEFAULT_SETTINGS = {
   defaultMaxTokens: 4096,
   showCostEstimates: true,
   showTokenCounts: true,
+  autoBalanceCouncils: true,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -53,6 +59,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       setShowTokenCounts: (show: boolean) => set({ showTokenCounts: show }),
 
+      setAutoBalanceCouncils: (enabled: boolean) => set({ autoBalanceCouncils: enabled }),
+
       resetToDefaults: () => set(DEFAULT_SETTINGS),
     }),
     {
@@ -64,6 +72,7 @@ export const useSettingsStore = create<SettingsState>()(
         defaultMaxTokens: state.defaultMaxTokens,
         showCostEstimates: state.showCostEstimates,
         showTokenCounts: state.showTokenCounts,
+        autoBalanceCouncils: state.autoBalanceCouncils,
       }),
     }
   )

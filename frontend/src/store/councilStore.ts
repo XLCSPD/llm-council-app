@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import type { CouncilMember, CouncilPreset, ModelInfo, RoleType } from '@/types';
+import {
+  getBalanceStatus,
+  applyOneClickFix,
+  type BalanceStatus,
+} from '@/utils/councilValidation';
 
 interface CouncilState {
   // Selected models for the council
@@ -17,11 +22,13 @@ interface CouncilState {
   setAvailableModels: (models: ModelInfo[]) => void;
   setLoading: (loading: boolean) => void;
   resetCouncil: () => void;
+  applyBalanceFix: () => void;
 
   // Computed
   getChairman: () => CouncilMember | undefined;
   getTotalEstimatedCost: (inputTokens: number, outputTokens: number) => number;
   isValidCouncil: () => boolean;
+  getBalanceStatus: (autoBalanceEnabled?: boolean) => BalanceStatus;
 }
 
 export const useCouncilStore = create<CouncilState>((set, get) => ({
@@ -95,6 +102,19 @@ export const useCouncilStore = create<CouncilState>((set, get) => ({
 
   isValidCouncil: () => {
     const { selectedModels } = get();
-    return selectedModels.length >= 2 && selectedModels.some((m) => m.enabled);
+    const status = getBalanceStatus(selectedModels);
+    // Valid if >= 2 members and <= 1 chair (adversarial role will be auto-added if missing)
+    return status.memberCount >= 2 && status.chairCount <= 1;
+  },
+
+  getBalanceStatus: (autoBalanceEnabled = true) => {
+    const { selectedModels } = get();
+    return getBalanceStatus(selectedModels, autoBalanceEnabled);
+  },
+
+  applyBalanceFix: () => {
+    const { selectedModels, availableModels } = get();
+    const fixedModels = applyOneClickFix(selectedModels, availableModels);
+    set({ selectedModels: fixedModels });
   },
 }));

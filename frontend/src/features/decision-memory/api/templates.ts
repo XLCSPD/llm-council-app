@@ -8,6 +8,7 @@
 
 import { supabase } from '@/lib/supabase';
 import type { CouncilTemplate, CouncilTemplateInput } from '../types';
+import { SYSTEM_PRESETS, isSystemPreset } from '@/data/systemPresets';
 
 // Helper to cast supabase table operations for new columns
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,6 +16,7 @@ const councilsTable = () => supabase.from('councils') as any;
 
 /**
  * Get all council templates for the current project
+ * System presets are returned first, followed by user templates
  */
 export async function getCouncilTemplates(
   projectId: string
@@ -31,7 +33,10 @@ export async function getCouncilTemplates(
     throw new Error(`Failed to get templates: ${error.message}`);
   }
 
-  return (data || []).map(transformCouncilToTemplate);
+  const userTemplates = (data || []).map(transformCouncilToTemplate);
+
+  // Return system presets first, then user templates
+  return [...SYSTEM_PRESETS, ...userTemplates];
 }
 
 /**
@@ -109,11 +114,17 @@ export async function createCouncilTemplate(
 
 /**
  * Update a council template
+ * System presets cannot be edited
  */
 export async function updateCouncilTemplate(
   templateId: string,
   input: Partial<CouncilTemplateInput>
 ): Promise<CouncilTemplate> {
+  // Prevent editing of system presets
+  if (isSystemPreset(templateId)) {
+    throw new Error('Cannot edit system presets');
+  }
+
   const updateData: Record<string, unknown> = {};
 
   if (input.name !== undefined) updateData.name = input.name;
@@ -140,10 +151,16 @@ export async function updateCouncilTemplate(
 
 /**
  * Toggle favorite status
+ * System presets cannot be favorited (they're always shown first)
  */
 export async function toggleTemplateFavorite(
   templateId: string
 ): Promise<boolean> {
+  // System presets cannot be favorited
+  if (isSystemPreset(templateId)) {
+    throw new Error('Cannot favorite system presets');
+  }
+
   // Get current status
   const { data: current, error: getError } = await councilsTable()
     .select('is_favorite')
@@ -197,8 +214,14 @@ export async function recordTemplateUsage(templateId: string): Promise<void> {
 
 /**
  * Delete a council template
+ * System presets cannot be deleted
  */
 export async function deleteCouncilTemplate(templateId: string): Promise<void> {
+  // Prevent deletion of system presets
+  if (isSystemPreset(templateId)) {
+    throw new Error('Cannot delete system presets');
+  }
+
   const { error } = await councilsTable()
     .delete()
     .eq('id', templateId)

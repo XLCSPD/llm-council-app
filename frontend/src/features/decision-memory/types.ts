@@ -65,6 +65,8 @@ export interface CouncilTemplate {
   usage_count: number;
   last_used_at: string | null;
   created_at: string;
+  /** Whether this is a system preset (immutable, ships with app) */
+  is_system?: boolean;
 }
 
 export interface CouncilTemplateMember {

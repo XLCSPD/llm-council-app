@@ -98,8 +98,22 @@ class RunnerService:
         self.llm = llm
         self._active_runs: dict[str, bool] = {}  # Track cancellation
 
-    async def create_run(self, request: RunCreate, user_id: UUID) -> dict:
-        """Create a new run and return the run record."""
+    async def create_run(
+        self,
+        request: RunCreate,
+        user_id: UUID,
+        balance_changes: Optional[list[dict]] = None,
+    ) -> dict:
+        """Create a new run and return the run record.
+
+        Args:
+            request: The run creation request.
+            user_id: The user creating the run.
+            balance_changes: Optional list of changes made by auto-balancing.
+
+        Returns:
+            The created run record.
+        """
         # Convert attachments to dict format for storage
         attachments_data = [att.model_dump() for att in request.prompt.attachments] if request.prompt.attachments else []
 
@@ -115,10 +129,11 @@ class RunnerService:
             attachments=attachments_data,
         )
 
-        # Create run record
+        # Create run record with council config (including balance changes for auditability)
         council_config = {
             "members": [m.model_dump() for m in request.council.members],
             "chairman_model_key": request.council.chairman_model_key,
+            "balance_changes": balance_changes or [],  # Track auto-balance changes
         }
         run = await self.db.create_run(
             session_id=request.session_id,

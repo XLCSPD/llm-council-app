@@ -16,8 +16,16 @@ from models.schemas import (
     RunResponse,
     RunStatusResponse,
     RunStatus,
+    BalanceChangeResponse,
+    SuggestedFixResponse,
 )
-from services.runner import get_runner_service
+from services.runner import get_runner_service, MODEL_COSTS
+from services.council_balancer import (
+    validate_council,
+    has_adversarial_role,
+    balance_council,
+    get_suggested_fix,
+)
 from services.prompt_enhancer import enhance_prompt, EnhancedPrompt
 from services.whisper import transcribe_audio, TranscriptionError
 from services.invites import (
@@ -134,24 +142,67 @@ async def create_run(
 
     The run will be executed in the background.
     Use GET /api/runs/{run_id} to check status.
+
+    Council Balance Rules:
+    - Council must have at least 2 members
+    - Council can have at most 1 chair
+    - Council should have at least 1 adversarial role (critic or devils_advocate)
+    - If auto_balance=True (default), missing adversarial role is auto-fixed
+    - If auto_balance=False, error is returned with suggested fix
     """
     if not x_user_id:
         raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Validate council configuration
+    is_valid, errors = validate_council(request.council.members)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail={"errors": errors})
+
+    # Check for adversarial role and balance if needed
+    balance_changes = []
+    if not has_adversarial_role(request.council.members):
+        if request.auto_balance:
+            # Auto-balance the council
+            balanced_members, changes = balance_council(
+                request.council.members, MODEL_COSTS
+            )
+            # Update the request with balanced members
+            request.council.members = balanced_members
+            balance_changes = [c.to_dict() for c in changes]
+        else:
+            # Return error with suggested fix
+            suggested_fix = get_suggested_fix(request.council.members, MODEL_COSTS)
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "council_not_balanced",
+                    "message": "Council requires at least one critic or devil's advocate",
+                    "suggested_fix": suggested_fix.to_dict(),
+                },
+            )
 
     runner = get_runner_service()
 
     try:
         user_id = UUID(x_user_id)
-        run = await runner.create_run(request, user_id)
+        run = await runner.create_run(request, user_id, balance_changes=balance_changes)
 
         # Start execution in background
         background_tasks.add_task(runner.execute_run, UUID(run["id"]))
+
+        # Build response with balance changes if any
+        balance_change_responses = None
+        if balance_changes:
+            balance_change_responses = [
+                BalanceChangeResponse(**c) for c in balance_changes
+            ]
 
         return RunStatusResponse(
             id=UUID(run["id"]),
             status=RunStatus.QUEUED,
             current_phase=1,
             message="Run created and queued for execution",
+            balance_changes=balance_change_responses,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -367,7 +418,7 @@ async def create_invite_endpoint(
 ):
     """Create and send an organization invite.
 
-    Requires X-User-ID header. User must be org admin/owner.
+    Requires X-User-ID header. Any org member can send invites.
     Sends invitation email via Supabase Auth.
     """
     if not x_user_id:
@@ -378,12 +429,19 @@ async def create_invite_endpoint(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid X-User-ID format")
 
-    # Verify user is org admin
-    is_admin = await verify_org_admin(request.org_id, user_id)
-    if not is_admin:
+    # Verify user is a member of the org (any member can invite)
+    client = get_supabase_client()._client
+    membership = (
+        client.table("org_members")
+        .select("id")
+        .eq("org_id", str(request.org_id))
+        .eq("user_id", str(user_id))
+        .execute()
+    )
+    if not membership.data:
         raise HTTPException(
             status_code=403,
-            detail="You must be an organization admin or owner to send invites"
+            detail="You must be a member of this organization to send invites"
         )
 
     # Validate role
@@ -421,7 +479,7 @@ async def list_invites_endpoint(
 ):
     """List all invites for an organization.
 
-    Requires X-User-ID header. User must be org admin/owner.
+    Requires X-User-ID header. Any org member can view invites.
     """
     if not x_user_id:
         raise HTTPException(status_code=401, detail="X-User-ID header required")
@@ -431,12 +489,19 @@ async def list_invites_endpoint(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid X-User-ID format")
 
-    # Verify user is org admin
-    is_admin = await verify_org_admin(org_id, user_id)
-    if not is_admin:
+    # Verify user is a member of the org
+    client = get_supabase_client()._client
+    membership = (
+        client.table("org_members")
+        .select("id")
+        .eq("org_id", str(org_id))
+        .eq("user_id", str(user_id))
+        .execute()
+    )
+    if not membership.data:
         raise HTTPException(
             status_code=403,
-            detail="You must be an organization admin or owner to view invites"
+            detail="You must be a member of this organization to view invites"
         )
 
     invites = await get_org_invites(org_id)

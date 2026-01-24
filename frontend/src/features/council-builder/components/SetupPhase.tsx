@@ -1,12 +1,15 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Play, Plus, Trash2, ChevronDown, Brain } from 'lucide-react';
-import { useSessionStore, useCouncilStore, useAuthStore } from '@/store';
+import { Play, Plus, Trash2, ChevronDown, Brain, RotateCcw } from 'lucide-react';
+import { useSessionStore, useCouncilStore, useAuthStore, useUIStore } from '@/store';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useReplayMode } from '@/hooks';
 import { supabase } from '@/lib/supabase';
 import { orchestratorApi } from '@/api/orchestrator';
 import { ReplayModeIndicator, ReplayPhaseNavigation } from '@/components/replay';
 import { GlassCard, GradientButton, GlowBadge, AIOrb, ModelTooltip, ModelSearchInput } from '@/components/ui';
+import { BalanceIndicator } from '@/components/ui/BalanceIndicator';
 import { PromptCreator } from './PromptCreator';
+import { CouncilPresetSelector } from './CouncilPresetSelector';
 import { getModelDescription, modelDescriptions } from '@/features/help/content/modelDescriptions';
 import type { RoleType, ModelInfo, ModelTier } from '@/types';
 
@@ -97,10 +100,24 @@ const tierBadgeVariants: Record<ModelTier, 'tier-fast' | 'tier-balanced' | 'tier
 
 export function SetupPhase() {
   const { prompt, setCurrentPhase, setCurrentRunId, addSession } = useSessionStore();
-  const { selectedModels, availableModels, addModel, removeModel, updateModelConfig, isValidCouncil } =
-    useCouncilStore();
+  const {
+    selectedModels,
+    availableModels,
+    addModel,
+    removeModel,
+    updateModelConfig,
+    isValidCouncil,
+    getBalanceStatus,
+    applyBalanceFix,
+    resetCouncil,
+  } = useCouncilStore();
   const { user } = useAuthStore();
+  const { addToast } = useUIStore();
+  const { autoBalanceCouncils } = useSettingsStore();
   const { isReplayMode, replayData, modelInfo } = useReplayMode();
+
+  // Get current balance status for UI indicator
+  const balanceStatus = getBalanceStatus(autoBalanceCouncils);
 
   // Ensure availableModels is always an array (defensive check for async loading)
   const safeModels = Array.isArray(availableModels) ? availableModels : [];
@@ -375,11 +392,21 @@ export function SetupPhase() {
               weight: m.weight,
             })),
           },
+          auto_balance: autoBalanceCouncils,
         },
         user.id
       );
 
       console.log('Run started:', runResponse);
+
+      // Show toast if council was auto-balanced
+      if (runResponse.balance_changes && runResponse.balance_changes.length > 0) {
+        const change = runResponse.balance_changes[0];
+        addToast({
+          type: 'info',
+          message: `A Critic was added to ensure balanced output (${change?.model_key})`,
+        });
+      }
 
       // Store the run ID and move to reasoning phase
       setCurrentRunId(runResponse.id);
@@ -427,15 +454,28 @@ export function SetupPhase() {
                   <p className="text-sm text-text-muted">{selectedModels.length} models selected</p>
                 </div>
               </div>
-              <GradientButton
-                data-tour="model-selector"
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowModelSelector(!showModelSelector)}
-                icon={<Plus className="w-4 h-4" />}
-              >
-                Add Model
-              </GradientButton>
+              <div className="flex items-center gap-2">
+                {selectedModels.length > 0 && (
+                  <button
+                    onClick={resetCouncil}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm text-text-muted hover:text-accent-error hover:bg-accent-error/10 transition-colors"
+                    title="Clear council"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="hidden sm:inline">Clear</span>
+                  </button>
+                )}
+                <CouncilPresetSelector onSelect={() => setShowModelSelector(false)} />
+                <GradientButton
+                  data-tour="model-selector"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowModelSelector(!showModelSelector)}
+                  icon={<Plus className="w-4 h-4" />}
+                >
+                  Add Model
+                </GradientButton>
+              </div>
             </div>
 
             {/* Model Selector Dropdown - Grouped by Tier */}
@@ -680,6 +720,16 @@ export function SetupPhase() {
               <p className="text-sm text-accent-error">{error}</p>
             </GlassCard>
           )}
+
+          {/* Balance Indicator */}
+          <div className="flex items-center justify-between">
+            <BalanceIndicator
+              status={balanceStatus}
+              autoBalanceEnabled={autoBalanceCouncils}
+              showDetails={true}
+              onAddCritic={!autoBalanceCouncils ? applyBalanceFix : undefined}
+            />
+          </div>
 
           {/* Start Button */}
           <GradientButton

@@ -40,6 +40,22 @@ export interface RunCreateRequest {
     }>;
     chairman_model_key?: string | null;
   };
+  /** Whether to auto-balance the council if adversarial role is missing (default: true) */
+  auto_balance?: boolean;
+}
+
+/** Record of a change made during council auto-balancing */
+export interface BalanceChange {
+  /** Type of change: 'auto_assigned_critic' or 'injected_critic' */
+  type: 'auto_assigned_critic' | 'injected_critic';
+  /** Model that was affected */
+  model_key: string;
+  /** Original role before change (if reassigned) */
+  original_role: string | null;
+  /** New role assigned */
+  new_role: string;
+  /** Explanation of why the change was made */
+  reason: string;
 }
 
 export interface RunResponse {
@@ -47,6 +63,8 @@ export interface RunResponse {
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
   current_phase: number;
   message?: string;
+  /** Changes made by auto-balancing (if any) */
+  balance_changes?: BalanceChange[];
 }
 
 export interface PromptEnhanceRequest {
