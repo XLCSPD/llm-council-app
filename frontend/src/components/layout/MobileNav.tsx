@@ -14,6 +14,8 @@ import {
   Pin,
   Star,
   Loader2,
+  ShieldCheck,
+  BarChart3,
 } from 'lucide-react';
 import { useSessionStore, useUIStore, useDecisionMemoryStore, useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
@@ -30,6 +32,7 @@ export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const { user } = useAuthStore();
   const { currentSession, removeSession } = useSessionStore();
   const { currentView, setCurrentView } = useUIStore();
@@ -55,6 +58,34 @@ export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
     }
     fetchProjectId();
   }, [user?.id]);
+
+  // Check if user is org admin/owner
+  useEffect(() => {
+    if (!user) {
+      setIsOrgAdmin(false);
+      return;
+    }
+
+    const checkAdminStatus = async () => {
+      const { data, error } = await supabase
+        .from('org_members')
+        .select('role')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (error) {
+        console.error('Failed to check admin status:', error);
+        return;
+      }
+
+      if (data && data[0]) {
+        const role = (data[0] as { role: string }).role;
+        setIsOrgAdmin(role === 'owner' || role === 'admin');
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   const {
     groupedSessions,
@@ -97,7 +128,7 @@ export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
     handleClose();
   };
 
-  const handleNavigation = (view: 'deliberation' | 'help' | 'settings') => {
+  const handleNavigation = (view: 'deliberation' | 'help' | 'settings' | 'admin' | 'analytics') => {
     setCurrentView(view);
     handleClose();
   };
@@ -238,6 +269,20 @@ export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
 
                 {/* Bottom Section */}
                 <div className="p-4 border-t border-border space-y-2">
+                  {isOrgAdmin && (
+                    <MobileNavItem
+                      icon={<ShieldCheck className="w-5 h-5" />}
+                      label="Admin"
+                      isActive={currentView === 'admin'}
+                      onClick={() => handleNavigation('admin')}
+                    />
+                  )}
+                  <MobileNavItem
+                    icon={<BarChart3 className="w-5 h-5" />}
+                    label="Analytics"
+                    isActive={currentView === 'analytics'}
+                    onClick={() => handleNavigation('analytics')}
+                  />
                   <MobileNavItem
                     icon={<HelpCircle className="w-5 h-5" />}
                     label="Help"

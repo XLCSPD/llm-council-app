@@ -38,6 +38,19 @@ from services.analytics import (
     get_model_analytics,
     AnalyticsError,
 )
+from services.admin import (
+    get_all_system_users,
+    get_detailed_members,
+    update_member_role,
+    remove_member,
+    bulk_member_action,
+    get_all_invites,
+    delete_invite,
+    get_audit_logs,
+    verify_org_owner,
+    verify_org_admin as verify_admin_access,
+    AdminError,
+)
 
 
 @asynccontextmanager
@@ -488,6 +501,268 @@ async def resend_invite_endpoint(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to resend invite: {str(e)}")
+
+
+# =============================================================================
+# Admin Panel Endpoints
+# =============================================================================
+
+
+class MemberUpdateRequest(BaseModel):
+    """Request for updating member role."""
+    role: str
+
+
+class BulkMemberRequest(BaseModel):
+    """Request for bulk member operations."""
+    member_ids: list[str]
+    action: str  # 'update_role' or 'remove'
+    role: Optional[str] = None
+
+
+@app.get("/api/admin/users")
+async def get_all_system_users_endpoint(
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get all users in the system from Supabase auth.
+
+    Returns all users with their org membership info.
+    Requires X-User-ID header. User must be an org admin/owner.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Verify user is an admin of at least one org
+    client = get_supabase_client()._client
+    result = (
+        client.table("org_members")
+        .select("role")
+        .eq("user_id", x_user_id)
+        .in_("role", ["owner", "admin"])
+        .limit(1)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    try:
+        users = await get_all_system_users()
+        return {"users": users, "total": len(users)}
+    except AdminError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch users: {str(e)}")
+
+
+@app.get("/api/orgs/{org_id}/members/detailed")
+async def get_detailed_members_endpoint(
+    org_id: UUID,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get detailed member list with activity stats.
+
+    Requires X-User-ID header. User must be org admin/owner.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Verify admin access
+    is_admin = await verify_admin_access(org_id, UUID(x_user_id))
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    try:
+        members = await get_detailed_members(org_id)
+        return {"members": members}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch members: {str(e)}")
+
+
+@app.patch("/api/orgs/{org_id}/members/{member_id}/role")
+async def update_member_role_endpoint(
+    org_id: UUID,
+    member_id: UUID,
+    request: MemberUpdateRequest,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Update a member's role. Only owners can change roles.
+
+    Requires X-User-ID header. User must be org owner.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Verify owner access (only owners can change roles)
+    is_owner = await verify_org_owner(org_id, UUID(x_user_id))
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="Owner access required to change roles")
+
+    try:
+        member = await update_member_role(
+            org_id=org_id,
+            member_id=member_id,
+            new_role=request.role,
+            actor_id=UUID(x_user_id)
+        )
+        return {"success": True, "member": member}
+    except AdminError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update role: {str(e)}")
+
+
+@app.delete("/api/orgs/{org_id}/members/{member_id}")
+async def remove_member_endpoint(
+    org_id: UUID,
+    member_id: UUID,
+    delete_account: bool = False,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Remove a member from the organization.
+
+    Requires X-User-ID header. User must be org admin/owner.
+    Set delete_account=true to also delete user from Supabase auth.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Verify admin access
+    is_admin = await verify_admin_access(org_id, UUID(x_user_id))
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    try:
+        await remove_member(
+            org_id=org_id,
+            member_id=member_id,
+            actor_id=UUID(x_user_id),
+            delete_account=delete_account
+        )
+        message = "Member removed and account deleted" if delete_account else "Member removed from organization"
+        return {"success": True, "message": message, "account_deleted": delete_account}
+    except AdminError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to remove member: {str(e)}")
+
+
+@app.post("/api/orgs/{org_id}/members/bulk")
+async def bulk_member_action_endpoint(
+    org_id: UUID,
+    request: BulkMemberRequest,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Perform bulk actions on members.
+
+    Requires X-User-ID header. User must be org owner for role changes, admin for removals.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # For role changes, require owner; for removals, require admin
+    if request.action == "update_role":
+        is_owner = await verify_org_owner(org_id, UUID(x_user_id))
+        if not is_owner:
+            raise HTTPException(status_code=403, detail="Owner access required for role changes")
+    else:
+        is_admin = await verify_admin_access(org_id, UUID(x_user_id))
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+    try:
+        results = await bulk_member_action(
+            org_id=org_id,
+            member_ids=request.member_ids,
+            action=request.action,
+            actor_id=UUID(x_user_id),
+            role=request.role
+        )
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to perform bulk action: {str(e)}")
+
+
+@app.get("/api/orgs/{org_id}/invites/all")
+async def get_all_invites_endpoint(
+    org_id: UUID,
+    status: Optional[str] = None,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get all invites including non-pending ones.
+
+    Requires X-User-ID header. User must be org admin/owner.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Verify admin access
+    is_admin = await verify_admin_access(org_id, UUID(x_user_id))
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    try:
+        invites = await get_all_invites(org_id, status=status)
+        return {"invites": invites}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch invites: {str(e)}")
+
+
+@app.delete("/api/invites/{invite_id}")
+async def delete_invite_endpoint(
+    invite_id: UUID,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Permanently delete an invite record.
+
+    Requires X-User-ID header.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    try:
+        await delete_invite(invite_id, actor_id=UUID(x_user_id))
+        return {"success": True, "message": "Invite deleted"}
+    except AdminError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete invite: {str(e)}")
+
+
+@app.get("/api/orgs/{org_id}/audit-logs")
+async def get_audit_logs_endpoint(
+    org_id: UUID,
+    action: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+):
+    """Get audit logs with filtering and pagination.
+
+    Requires X-User-ID header. User must be org admin/owner.
+    """
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Verify admin access
+    is_admin = await verify_admin_access(org_id, UUID(x_user_id))
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    try:
+        logs, total_count = await get_audit_logs(
+            org_id=org_id,
+            action=action,
+            limit=limit,
+            offset=offset
+        )
+        return {
+            "logs": logs,
+            "total_count": total_count,
+            "has_more": offset + len(logs) < total_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch audit logs: {str(e)}")
 
 
 # =============================================================================

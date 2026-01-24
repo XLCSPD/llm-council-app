@@ -30,6 +30,9 @@ const HelpPage = lazy(() =>
 const AnalyticsPage = lazy(() =>
   import('@/features/analytics').then(m => ({ default: m.AnalyticsPage }))
 );
+const AdminPage = lazy(() =>
+  import('@/features/admin').then(m => ({ default: m.AdminPage }))
+);
 const CommandPalette = lazy(() =>
   import('@/features/decision-memory').then(m => ({ default: m.CommandPalette }))
 );
@@ -184,7 +187,16 @@ function AppContent() {
 
   // Render the appropriate phase component or settings/help
   const renderPhase = () => {
-    // Check for help view first
+    // Check for admin view
+    if (currentView === 'admin') {
+      return (
+        <Suspense fallback={<PhaseLoadingFallback />}>
+          <AdminPage />
+        </Suspense>
+      );
+    }
+
+    // Check for analytics view
     if (currentView === 'analytics') {
       return (
         <Suspense fallback={<PhaseLoadingFallback />}>

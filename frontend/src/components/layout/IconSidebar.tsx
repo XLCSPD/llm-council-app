@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Settings,
   HelpCircle,
   Search,
   BarChart3,
+  ShieldCheck,
 } from 'lucide-react';
-import { useSessionStore, useUIStore, useDecisionMemoryStore } from '@/store';
+import { supabase } from '@/lib/supabase';
+import { useSessionStore, useUIStore, useDecisionMemoryStore, useAuthStore } from '@/store';
 import { SmartHistoryPanel } from '@/features/decision-memory/components/SmartHistory';
 import type { SessionSummary } from '@/types';
 
@@ -17,9 +19,39 @@ interface IconSidebarProps {
 
 export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const { removeSession } = useSessionStore();
   const { currentView, setCurrentView } = useUIStore();
   const { openCommandPalette } = useDecisionMemoryStore();
+  const { user } = useAuthStore();
+
+  // Check if user is org admin/owner
+  useEffect(() => {
+    if (!user) {
+      setIsOrgAdmin(false);
+      return;
+    }
+
+    const checkAdminStatus = async () => {
+      const { data, error } = await supabase
+        .from('org_members')
+        .select('role')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return;
+      }
+
+      if (data && data[0]) {
+        const role = (data[0] as { role: string }).role;
+        setIsOrgAdmin(role === 'owner' || role === 'admin');
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   const handleSelectSession = (sessionId: string) => {
     setCurrentView('deliberation');
@@ -112,6 +144,15 @@ export function IconSidebar({ onNewSession, onSelectSession }: IconSidebarProps)
 
       {/* Bottom Section */}
       <div className="p-2 border-t border-glass-border space-y-1">
+        {isOrgAdmin && (
+          <NavItem
+            icon={<ShieldCheck className="w-5 h-5" />}
+            label="Admin"
+            isExpanded={isExpanded}
+            isActive={currentView === 'admin'}
+            onClick={() => setCurrentView('admin')}
+          />
+        )}
         <NavItem
           icon={<BarChart3 className="w-5 h-5" />}
           label="Analytics"
