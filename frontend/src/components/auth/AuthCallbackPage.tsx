@@ -3,11 +3,20 @@ import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
 
 export function AuthCallbackPage() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, initialize } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'loading' | 'accepting_invite' | 'success' | 'error'>('loading');
   const [inviteAccepted, setInviteAccepted] = useState(false);
   const inviteProcessedRef = useRef(false);
+  const initRef = useRef(false);
+
+  // Initialize auth store to detect tokens in URL
+  useEffect(() => {
+    if (!initRef.current) {
+      initRef.current = true;
+      initialize();
+    }
+  }, [initialize]);
 
   useEffect(() => {
     // Check URL for error parameters from Supabase
