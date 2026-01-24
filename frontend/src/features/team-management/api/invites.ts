@@ -152,21 +152,38 @@ export async function getOrgMembers(
 
 /**
  * Cancel a pending invite
+ * Falls back to direct Supabase update if orchestrator unavailable
  */
 export async function cancelInvite(
   inviteId: string,
   userId: string
 ): Promise<void> {
-  const response = await fetch(`${ORCHESTRATOR_URL}/api/invites/${inviteId}/cancel`, {
-    method: 'POST',
-    headers: {
-      'X-User-ID': userId,
-    },
-  });
+  // Try orchestrator first
+  try {
+    const response = await fetch(`${ORCHESTRATOR_URL}/api/invites/${inviteId}/cancel`, {
+      method: 'POST',
+      headers: {
+        'X-User-ID': userId,
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Failed to cancel invite' }));
-    throw new Error(error.detail || 'Failed to cancel invite');
+    if (response.ok) {
+      return;
+    }
+  } catch {
+    // Orchestrator unavailable, fall back to Supabase
+  }
+
+  // Fallback: Update Supabase directly
+  // Cast to bypass strict typing for untyped table
+  const { error } = await (supabase
+    .from('org_invites') as ReturnType<typeof supabase.from>)
+    .update({ status: 'canceled' })
+    .eq('id', inviteId)
+    .eq('status', 'pending');
+
+  if (error) {
+    throw new Error('Failed to cancel invite');
   }
 }
 

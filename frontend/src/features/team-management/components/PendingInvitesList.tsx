@@ -39,11 +39,15 @@ export function PendingInvitesList({ invites, onCancel, userId }: PendingInvites
 
   const handleCancel = async (invite: Invite) => {
     setCancelingId(invite.id);
+    setErrorMessage(null);
     try {
       await cancelInvite(invite.id, userId);
       onCancel(invite.id);
     } catch (err) {
       console.error('Failed to cancel invite:', err);
+      const message = err instanceof Error ? err.message : 'Failed to cancel invite';
+      setErrorMessage(message);
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setCancelingId(null);
     }
