@@ -74,15 +74,13 @@ export function TeamSection() {
         const membersData = await getOrgMembers(membership.org_id, user.id);
         setMembers(membersData);
 
-        // Get pending invites (only if admin/owner)
-        if (membership.role === 'owner' || membership.role === 'admin') {
-          try {
-            const invitesData = await getOrgInvites(membership.org_id, user.id);
-            setInvites(invitesData.filter((i) => i.status === 'pending'));
-          } catch {
-            // Silently fail if invites can't be fetched - might not have the table yet
-            setInvites([]);
-          }
+        // Get pending invites (all members can view)
+        try {
+          const invitesData = await getOrgInvites(membership.org_id, user.id);
+          setInvites(invitesData.filter((i) => i.status === 'pending'));
+        } catch {
+          // Silently fail if invites can't be fetched - might not have the table yet
+          setInvites([]);
         }
       } catch (err) {
         console.error('Failed to fetch team data:', err);
@@ -95,7 +93,8 @@ export function TeamSection() {
     fetchData();
   }, [user]);
 
-  const canManageTeam = currentUserRole === 'owner' || currentUserRole === 'admin';
+  // Only owners can manage members (remove, change roles)
+  const canManageMembers = currentUserRole === 'owner';
 
   const handleInviteCreated = (invite: Invite) => {
     setInvites((prev) => [invite, ...prev]);
@@ -141,18 +140,16 @@ export function TeamSection() {
           </div>
         </div>
 
-        {canManageTeam && (
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
-              bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500
-              text-white shadow-lg shadow-teal-500/20
-              transition-all duration-200 hover:-translate-y-0.5"
-          >
-            <UserPlus className="w-4 h-4" />
-            Invite Member
-          </button>
-        )}
+        <button
+          onClick={() => setShowInviteModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+            bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500
+            text-white shadow-lg shadow-teal-500/20
+            transition-all duration-200 hover:-translate-y-0.5"
+        >
+          <UserPlus className="w-4 h-4" />
+          Invite Member
+        </button>
       </div>
 
       {/* Current Members */}
@@ -161,12 +158,12 @@ export function TeamSection() {
         <TeamMembersList
           members={members}
           currentUserId={user?.id || ''}
-          canManage={canManageTeam && currentUserRole === 'owner'}
+          canManage={canManageMembers}
         />
       </div>
 
-      {/* Pending Invites (only visible to admins) */}
-      {canManageTeam && invites.length > 0 && (
+      {/* Pending Invites */}
+      {invites.length > 0 && (
         <div className="pt-4 border-t border-glass-border">
           <h4 className="text-sm font-medium text-text-secondary mb-3 flex items-center gap-2">
             <Mail className="w-4 h-4 text-slate-400" />
@@ -181,7 +178,7 @@ export function TeamSection() {
       )}
 
       {/* Empty state for no pending invites */}
-      {canManageTeam && invites.length === 0 && members.length === 1 && (
+      {invites.length === 0 && members.length === 1 && (
         <div className="pt-4 border-t border-glass-border">
           <div className="text-center py-6 px-4 rounded-xl bg-slate-800/30 border border-dashed border-slate-700">
             <UserPlus className="w-8 h-8 text-slate-500 mx-auto mb-2" />

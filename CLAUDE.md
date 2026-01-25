@@ -27,7 +27,7 @@ LLM Council is a multi-agent AI deliberation platform that assembles configurabl
 - Zustand for state management
 - Tailwind CSS with CSS variables for theming
 - Supabase Realtime subscriptions for live updates during runs
-- Feature-based organization in `features/` (council-builder, decision-memory, help, pdf-export, peer-review, prompt-editor, reasoning, review, session, settings, synthesis)
+- Feature-based organization in `features/` (admin, analytics, council-builder, decision-memory, help, pdf-export, peer-review, prompt-editor, reasoning, review, session, settings, synthesis, team-management)
 - 3D visualization with React Three Fiber (`components/ui/Orb3D/`)
 - Path alias: `@/*` maps to `src/*`
 - Strict TypeScript config: `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`
@@ -44,6 +44,12 @@ LLM Council is a multi-agent AI deliberation platform that assembles configurabl
 - Realtime subscriptions for live run updates
 - Core tables: `orgs`, `org_members`, `projects`, `sessions`, `prompts`, `runs`, `run_models`, `model_outputs`, `peer_reviews`, `artifacts`
 - Decision Memory tables: `session_annotations`, `session_tags`, `tags`, `council_templates`, `template_members`, `smart_history_sessions`
+- Admin tables: `org_invites`, `audit_logs`, `admin_users`
+
+### Video (`video/`)
+- Remotion-based marketing video generation
+- Next.js for rendering pipeline
+- Separate from main app - used for generating promotional content
 
 ## Four-Phase Deliberation Flow
 
@@ -161,6 +167,21 @@ The `decision-memory` feature provides session organization and retrieval:
 - **Session Annotations** - Star ratings, notes, and tags for organizing deliberations
 - **Re-run Actions** - Exact re-run, reuse council only, or reuse prompt only
 
+## Admin & Analytics
+
+The admin panel (`/admin` route) provides organization management features:
+- **User Management** - View all platform users, manage org members
+- **Role Management** - Assign roles (member, admin) to org members
+- **Invite System** - Send email invites, track pending invites, resend/cancel
+- **Audit Logs** - Track member changes, invites, and admin actions
+
+The analytics dashboard (`/analytics` route) shows:
+- **Usage Metrics** - Total sessions, runs, token usage over time
+- **Cost Tracking** - Cost per model, daily/weekly/monthly breakdown
+- **Model Performance** - Response times, success rates by model
+
+Access requires admin role in the organization.
+
 ## Realtime Subscription Pattern
 
 The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to Supabase Realtime channels for live updates:
@@ -171,12 +192,15 @@ The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to
 ## Key Files
 
 ### Orchestrator
-- `main.py` - FastAPI entry point, run endpoints (`POST /api/runs`, `GET /api/runs/{run_id}`)
+- `main.py` - FastAPI entry point with all API routes
 - `services/runner.py` - Deliberation pipeline (phases 2-4 execution)
 - `services/openrouter.py` - LLM API client with parallel execution
 - `services/prompts.py` - Prompt templates for reasoning, review, synthesis phases
 - `services/prompt_enhancer.py` - AI-powered prompt enhancement service
 - `services/whisper.py` - OpenAI Whisper transcription service
+- `services/admin.py` - Admin operations (user management, audit logs)
+- `services/analytics.py` - Usage and cost analytics
+- `services/invites.py` - Organization invite management
 - `db/supabase.py` - Database operations
 
 ### Frontend
@@ -184,6 +208,9 @@ The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to
 - `src/store/` - Zustand stores (council, session, auth, ui, settings, help, decisionMemory)
 - `src/features/` - Feature modules organized by domain
 - `src/features/decision-memory/` - Command palette, smart history, council templates, session annotations
+- `src/features/admin/` - Admin panel with user management, audit logs
+- `src/features/analytics/` - Usage metrics, cost tracking, model performance dashboard
+- `src/features/team-management/` - Team invites, member management
 - `src/api/orchestrator.ts` - Orchestrator API client
 - `src/hooks/useRealtimeRun.ts` - Supabase realtime subscription hook
 - `src/hooks/useReplayMode.ts` - Access historical session data in phase components
@@ -193,18 +220,47 @@ The `useRealtimeRun` hook (`frontend/src/hooks/useRealtimeRun.ts`) subscribes to
 - `src/components/ui/Orb3D/` - 3D Intelligence Orb visualization
 
 ### Database
-- `supabase/migrations/001_initial_schema.sql` - Full schema with RLS policies
-- `supabase/migrations/20241228_setup_user_workspace.sql` - User workspace setup (auto-creates org/project on first login)
+- `supabase/migrations/` - Database migrations (apply in order with `supabase db push`)
+  - `001_initial_schema.sql` - Full schema with RLS policies
+  - `20241228_setup_user_workspace.sql` - Auto-creates org/project on first login
+  - `20260103_decision_memory.sql` - Session annotations, tags, templates
+  - `20260118_org_invites.sql` - Organization invite system
+  - `20260122_admin_analytics.sql` - Analytics views and admin tables
+  - `20260125_admin_panel.sql` - Admin panel tables and audit logs
 
 ## API Endpoints
 
 ### Orchestrator (port 8002)
+
+**Core Deliberation:**
 - `GET /health` - Health check
 - `POST /api/runs` - Create and start a deliberation run (requires `X-User-ID` header)
 - `GET /api/runs/{run_id}` - Get run status and results
 - `POST /api/runs/{run_id}/cancel` - Cancel a running deliberation
-- `POST /api/prompts/enhance` - AI-powered prompt enhancement (improves prompt clarity, suggests objectives/constraints)
-- `POST /api/transcribe` - Audio-to-text transcription using OpenAI Whisper (multipart form, max 25MB)
+- `POST /api/prompts/enhance` - AI-powered prompt enhancement
+- `POST /api/transcribe` - Audio-to-text transcription (OpenAI Whisper, max 25MB)
+
+**Team & Invites:**
+- `POST /api/invites` - Create org invite
+- `GET /api/orgs/{org_id}/invites` - List pending invites
+- `GET /api/orgs/{org_id}/members` - List org members
+- `POST /api/invites/{invite_id}/cancel` - Cancel invite
+- `POST /api/invites/{invite_id}/resend` - Resend invite email
+
+**Admin (requires admin role):**
+- `GET /api/admin/users` - List all platform users
+- `GET /api/admin/is-platform-admin` - Check if user is platform admin
+- `GET /api/orgs/{org_id}/members/detailed` - Detailed member list
+- `PATCH /api/orgs/{org_id}/members/{member_id}/role` - Update member role
+- `DELETE /api/orgs/{org_id}/members/{member_id}` - Remove member
+- `POST /api/orgs/{org_id}/members/bulk` - Bulk member operations
+- `GET /api/orgs/{org_id}/audit-logs` - Organization audit logs
+
+**Analytics:**
+- `GET /api/analytics/summary` - Usage summary statistics
+- `GET /api/analytics/usage` - Detailed usage metrics
+- `GET /api/analytics/costs` - Cost breakdown by model
+- `GET /api/analytics/models` - Model performance metrics
 
 ## Development Workflow
 

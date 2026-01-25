@@ -1,0 +1,204 @@
+<!--
+  SUPABASE EMAIL TEMPLATE - Confirm Signup / Welcome
+
+  Copy everything below this comment block and paste into:
+  Supabase Dashboard > Authentication > Email Templates > Confirm Signup
+
+  Available variables:
+  - {{ .ConfirmationURL }} - The confirmation link (REQUIRED)
+  - {{ .SiteURL }} - Your app URL
+  - {{ .Email }} - User's email
+-->
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F8FAFC; padding: 20px;">
+  <tr>
+    <td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background: linear-gradient(135deg, #0A1628 0%, #152238 100%); padding: 40px; text-align: center;">
+            <img src="https://frontend-phi-black-hybffec8kj.vercel.app/logo.png" alt="LLM Council" width="70" height="70" style="margin-bottom: 16px;">
+            <h1 style="color: #FFFFFF; font-size: 28px; font-weight: 700; margin: 0 0 8px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Welcome to LLM Council!</h1>
+            <p style="color: #5EEAD4; font-size: 14px; font-weight: 500; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">You're in! Let's get deliberating &#127881;</p>
+          </td>
+        </tr>
+
+        <!-- Content -->
+        <tr>
+          <td style="padding: 40px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+
+            <!-- Greeting -->
+            <p style="font-size: 20px; color: #1A365D; margin: 0 0 20px 0;">
+              Hey there, decision-maker! &#128075;
+            </p>
+
+            <p style="font-size: 16px; color: #64748B; line-height: 1.6; margin: 0 0 28px 0;">
+              We're thrilled to have you join <strong style="color: #1A365D;">LLM Council</strong>! You're now part of an exclusive group exploring a new way to get AI-powered answers - through structured debate and consensus.
+            </p>
+
+            <!-- Beta Notice Box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%); border-radius: 12px; margin-bottom: 28px;">
+              <tr>
+                <td style="padding: 24px; color: #FFFFFF;">
+                  <p style="font-size: 18px; font-weight: 700; margin: 0 0 12px 0;">&#128640; You're an Early Explorer!</p>
+                  <p style="font-size: 14px; margin: 0 0 12px 0; opacity: 0.95; line-height: 1.5;">
+                    LLM Council is currently in <strong>beta</strong>, which means you're experiencing the cutting edge! You might encounter the occasional hiccup as we refine things.
+                  </p>
+                  <p style="background: rgba(255,255,255,0.2); padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; margin: 0;">
+                    &#128588; We respond to issues <em>fast</em> and genuinely value your feedback!
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- CTA Button - Primary -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
+              <tr>
+                <td align="center">
+                  <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%); color: #FFFFFF; text-decoration: none; padding: 16px 40px; border-radius: 50px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4);">
+                    Confirm Email &amp; Get Started &#8594;
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding-top: 16px;">
+                  <p style="font-size: 13px; color: #64748B; margin: 0;">
+                    Click the button above to confirm your email and dive in!
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Divider -->
+            <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 28px 0;">
+
+            <!-- What You Can Do Section -->
+            <p style="font-size: 16px; font-weight: 700; color: #1A365D; margin: 0 0 16px 0;">
+              &#10024; What You Can Do
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+              <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid #E2E8F0;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="font-size: 20px; vertical-align: middle;">&#129504;</td>
+                      <td style="padding-left: 12px; color: #1A365D; font-size: 14px;"><strong>Ask tough questions</strong> - strategy, analysis, creative problems</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid #E2E8F0;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="font-size: 20px; vertical-align: middle;">&#129302;</td>
+                      <td style="padding-left: 12px; color: #1A365D; font-size: 14px;"><strong>Assemble your council</strong> - mix Claude, GPT-4, Gemini &amp; more</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid #E2E8F0;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="font-size: 20px; vertical-align: middle;">&#128172;</td>
+                      <td style="padding-left: 12px; color: #1A365D; font-size: 14px;"><strong>Watch them debate</strong> - real-time reasoning &amp; critique</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="font-size: 20px; vertical-align: middle;">&#127942;</td>
+                      <td style="padding-left: 12px; color: #1A365D; font-size: 14px;"><strong>Get synthesized answers</strong> - with confidence levels you can trust</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Quick Tips -->
+            <p style="font-size: 16px; font-weight: 700; color: #1A365D; margin: 0 0 16px 0;">
+              &#128161; Quick Tips to Get Rolling
+            </p>
+
+            <!-- Tips Grid -->
+            <table width="100%" cellpadding="0" cellspacing="8" style="margin-bottom: 24px;">
+              <tr>
+                <td width="50%" style="background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 8px; padding: 16px; vertical-align: top;">
+                  <p style="font-weight: 700; color: #166534; margin: 0 0 6px 0; font-size: 13px;">Try "Enhance with AI"</p>
+                  <p style="color: #166534; font-size: 12px; margin: 0; line-height: 1.4;">Let AI help refine your prompt before the council debates it!</p>
+                </td>
+                <td width="50%" style="background: #EFF6FF; border: 1px solid #93C5FD; border-radius: 8px; padding: 16px; vertical-align: top;">
+                  <p style="font-weight: 700; color: #1E40AF; margin: 0 0 6px 0; font-size: 13px;">Use keyboard shortcuts</p>
+                  <p style="color: #1E40AF; font-size: 12px; margin: 0; line-height: 1.4;">Press <strong>&#8984;K</strong> (or Ctrl+K) to quickly search past sessions!</p>
+                </td>
+              </tr>
+              <tr>
+                <td width="50%" style="background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 8px; padding: 16px; vertical-align: top;">
+                  <p style="font-weight: 700; color: #92400E; margin: 0 0 6px 0; font-size: 13px;">Mix your council</p>
+                  <p style="color: #92400E; font-size: 12px; margin: 0; line-height: 1.4;">Different models have different strengths - variety leads to better outcomes!</p>
+                </td>
+                <td width="50%" style="background: #F5F3FF; border: 1px solid #C4B5FD; border-radius: 8px; padding: 16px; vertical-align: top;">
+                  <p style="font-weight: 700; color: #5B21B6; margin: 0 0 6px 0; font-size: 13px;">Save your councils</p>
+                  <p style="color: #5B21B6; font-size: 12px; margin: 0; line-height: 1.4;">Create templates for your favorite model combinations to reuse later!</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Feedback Box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%); border-radius: 12px; margin-bottom: 28px;">
+              <tr>
+                <td style="padding: 24px; color: #FFFFFF;">
+                  <p style="font-size: 18px; font-weight: 700; margin: 0 0 12px 0;">&#128172; We Want to Hear from You!</p>
+                  <p style="font-size: 14px; margin: 0 0 16px 0; opacity: 0.95; line-height: 1.5;">
+                    Found a bug? Have an idea? Just want to say hi? Your feedback shapes what we build next. Seriously - we read every message!
+                  </p>
+                  <a href="mailto:ayshash@gmail.com?subject=Tech%20Support%20-%20LLM%20Council" style="display: inline-block; background: rgba(255,255,255,0.95); color: #0D9488; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 700;">
+                    &#9993; Send Feedback
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Secondary CTA -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 20px 0;">
+              <tr>
+                <td align="center">
+                  <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%); color: #FFFFFF; text-decoration: none; padding: 14px 36px; border-radius: 50px; font-size: 15px; font-weight: 700;">
+                    Let's Go! &#8594;
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="text-align: center; color: #64748B; font-size: 13px; margin: 0;">
+              Questions or issues? Email
+              <a href="mailto:ayshash@gmail.com?subject=Tech%20Support%20-%20LLM%20Council"
+                 style="color: #0D9488; text-decoration: underline; font-weight: 600;">
+                ayshash@gmail.com
+              </a>
+              <br>
+              <span style="font-size: 11px; opacity: 0.8;">(Include "Tech Support" in subject for fastest response)</span>
+            </p>
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background: #0A1628; padding: 28px 40px; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <p style="color: #94A3B8; font-size: 13px; margin: 0 0 12px 0;">Thanks for being an early adopter - you're awesome! &#11088;</p>
+            <p style="color: #5EEAD4; font-weight: 600; font-size: 14px; margin: 0 0 16px 0;">- A.Y. from the EveryDAI Team</p>
+            <p style="color: #FFFFFF; font-size: 15px; font-weight: 600; margin: 0;">&#129302; Better decisions through structured disagreement</p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
