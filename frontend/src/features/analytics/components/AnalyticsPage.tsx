@@ -3,16 +3,28 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, BarChart3, Loader2 } from 'lucide-react';
+import { ArrowLeft, BarChart3, Loader2, RefreshCw } from 'lucide-react';
 import { useUIStore, useAuthStore } from '@/store';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { supabase } from '@/lib/supabase';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { MetricCard } from './MetricCard';
 import { UsageSection } from './UsageSection';
+import { UserActivitySection } from './UserActivitySection';
 import { CostSection } from './CostSection';
 import { ModelPerformanceSection } from './ModelPerformanceSection';
 import type { TimeRange } from '../types';
+
+/** Format relative time (e.g., "5 seconds ago", "2 minutes ago") */
+function formatRelativeTime(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 10) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+}
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: '7d', label: '7 days' },
@@ -54,6 +66,8 @@ export function AnalyticsPage() {
     models,
     loading,
     error,
+    isRefreshing,
+    lastUpdated,
     isPlatformAdmin,
     scope,
     setScope,
@@ -63,7 +77,15 @@ export function AnalyticsPage() {
   } = useAnalytics({
     userId: user?.id || '',
     orgId,
+    refreshInterval: 30_000, // Auto-refresh every 30 seconds
   });
+
+  // Update relative time display every 10 seconds
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(timer);
+  }, []);
 
   if (loadingOrg) {
     return (
@@ -138,6 +160,36 @@ export function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Live indicator and refresh */}
+      {!loading && summary && (
+        <div className="flex items-center justify-end gap-3 mb-4 -mt-4">
+          {/* Live indicator */}
+          <div className="flex items-center gap-2 text-xs text-text-tertiary">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+            <span>Auto-refreshing</span>
+            {lastUpdated && (
+              <span className="text-text-quaternary">
+                · Updated {formatRelativeTime(lastUpdated)}
+              </span>
+            )}
+          </div>
+
+          {/* Manual refresh button */}
+          <button
+            onClick={refetch}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary rounded-lg hover:bg-bg-tertiary/50 transition-colors disabled:opacity-50"
+            title="Refresh now"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+      )}
+
       {/* Error State */}
       {error && (
         <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
@@ -194,6 +246,17 @@ export function AnalyticsPage() {
                 Usage Trends
               </h2>
               <UsageSection data={usage} />
+            </GlassCard>
+          )}
+
+          {/* User Activity Section */}
+          {usage && costs && (
+            <GlassCard variant="default" padding="lg">
+              <h2 className="text-lg font-semibold text-text-primary mb-6 flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-gradient-accent rounded-full" />
+                Top Users
+              </h2>
+              <UserActivitySection usage={usage} costs={costs} />
             </GlassCard>
           )}
 

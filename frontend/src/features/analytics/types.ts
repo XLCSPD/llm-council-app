@@ -19,6 +19,7 @@ export interface DailyDataPoint {
 
 export interface TopUser {
   user_id: string;
+  email?: string;
   session_count: number;
 }
 
@@ -38,6 +39,7 @@ export interface ModelCost {
 
 export interface UserCost {
   user_id: string;
+  email?: string;
   cost: number;
   run_count: number;
 }

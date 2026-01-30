@@ -145,7 +145,7 @@ async def get_analytics_summary(
     if session_ids:
         runs = (
             client.table("runs")
-            .select("id, status, cost_usd")
+            .select("id, status")
             .in_("session_id", session_ids)
             .gte("created_at", start_date)
             .execute()
@@ -153,8 +153,20 @@ async def get_analytics_summary(
 
         total_runs = len(runs.data)
         successful_runs = len([r for r in runs.data if r["status"] == "succeeded"])
-        total_cost = sum(r.get("cost_usd") or 0 for r in runs.data)
         success_rate = (successful_runs / total_runs * 100) if total_runs > 0 else 0
+
+        # Get actual costs from run_models (runs.cost_usd is not populated)
+        run_ids = [r["id"] for r in runs.data]
+        if run_ids:
+            run_models = (
+                client.table("run_models")
+                .select("cost_usd")
+                .in_("run_id", run_ids)
+                .execute()
+            )
+            total_cost = sum(rm.get("cost_usd") or 0 for rm in run_models.data)
+        else:
+            total_cost = 0
     else:
         total_runs = 0
         successful_runs = 0
@@ -268,17 +280,18 @@ async def get_usage_analytics(
     top_users = []
 
     for user_id, count in top_user_ids:
-        # Get user email from auth.users via org_members or direct lookup
-        user_result = (
-            client.table("org_members")
-            .select("user_id")
-            .eq("user_id", user_id)
-            .limit(1)
-            .execute()
-        )
+        # Get user email from auth admin API
+        email = None
+        try:
+            user_response = client.auth.admin.get_user_by_id(user_id)
+            if user_response and user_response.user:
+                email = user_response.user.email
+        except Exception:
+            pass
 
         top_users.append({
             "user_id": user_id,
+            "email": email,
             "session_count": count,
         })
 
@@ -345,10 +358,10 @@ async def get_cost_analytics(
     if not session_ids:
         return {"by_model": [], "by_user": [], "by_day": [], "total": 0}
 
-    # Get runs with costs
+    # Get runs (costs come from run_models, not runs table)
     runs = (
         client.table("runs")
-        .select("id, session_id, cost_usd, created_at")
+        .select("id, session_id, created_at")
         .in_("session_id", session_ids)
         .gte("created_at", start_date)
         .execute()
@@ -381,11 +394,21 @@ async def get_cost_analytics(
 
     by_model = sorted(model_costs.values(), key=lambda x: -x["cost"])
 
+    # Calculate total from run_models (runs.cost_usd is not populated)
+    total = sum(rm.get("cost_usd") or 0 for rm in run_models)
+
+    # Build run cost map from run_models for user/day aggregation
+    run_cost_map = {}
+    for rm in run_models:
+        run_id = rm["run_id"]
+        cost = rm.get("cost_usd") or 0
+        run_cost_map[run_id] = run_cost_map.get(run_id, 0) + cost
+
     # Aggregate by user
     user_costs = {}
     for run in runs.data:
         user_id = session_user_map.get(run["session_id"])
-        cost = run.get("cost_usd") or 0
+        cost = run_cost_map.get(run["id"], 0)
 
         if user_id:
             if user_id not in user_costs:
@@ -393,18 +416,32 @@ async def get_cost_analytics(
             user_costs[user_id]["cost"] += cost
             user_costs[user_id]["run_count"] += 1
 
-    by_user = sorted(user_costs.values(), key=lambda x: -x["cost"])[:10]
+    # Sort and get top 10, then add emails
+    sorted_users = sorted(user_costs.values(), key=lambda x: -x["cost"])[:10]
+    by_user = []
+    for user_data in sorted_users:
+        email = None
+        try:
+            user_response = client.auth.admin.get_user_by_id(user_data["user_id"])
+            if user_response and user_response.user:
+                email = user_response.user.email
+        except Exception:
+            pass
+        by_user.append({
+            "user_id": user_data["user_id"],
+            "email": email,
+            "cost": user_data["cost"],
+            "run_count": user_data["run_count"],
+        })
 
     # Aggregate by day
     daily_costs = {}
     for run in runs.data:
         date = run["created_at"][:10]
-        cost = run.get("cost_usd") or 0
+        cost = run_cost_map.get(run["id"], 0)
         daily_costs[date] = daily_costs.get(date, 0) + cost
 
     by_day = [{"date": d, "cost": round(c, 4)} for d, c in sorted(daily_costs.items())]
-
-    total = sum(r.get("cost_usd") or 0 for r in runs.data)
 
     return {
         "by_model": by_model,
