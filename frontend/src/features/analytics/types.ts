@@ -28,6 +28,7 @@ export interface UsageAnalytics {
   top_users: TopUser[];
   total_sessions: number;
   total_runs: number;
+  total_user_count: number;
 }
 
 export interface ModelCost {
@@ -54,6 +55,7 @@ export interface CostAnalytics {
   by_user: UserCost[];
   by_day: DailyCost[];
   total: number;
+  total_user_count?: number;
 }
 
 export interface ModelPerformance {

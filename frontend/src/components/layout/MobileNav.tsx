@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   BarChart3,
 } from 'lucide-react';
-import { useSessionStore, useUIStore, useDecisionMemoryStore, useAuthStore } from '@/store';
+import { useSessionStore, useUIStore, useDecisionMemoryStore, useAuthStore, useWorkspaceStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { useSmartHistory } from '@/features/decision-memory/hooks/useSmartHistory';
 import type { SmartHistorySession } from '@/features/decision-memory/types';
@@ -31,33 +31,12 @@ interface MobileNavProps {
 export function MobileNav({ onNewSession, onSelectSession }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [projectId, setProjectId] = useState<string | null>(null);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const { user } = useAuthStore();
+  const { projectId } = useWorkspaceStore();
   const { currentSession, removeSession } = useSessionStore();
   const { currentView, setCurrentView } = useUIStore();
   const { openCommandPalette } = useDecisionMemoryStore();
-
-  // Fetch project ID
-  useEffect(() => {
-    async function fetchProjectId() {
-      if (!user?.id) return;
-      try {
-        const { data: workspace } = await supabase.rpc('setup_user_workspace', {
-          user_uuid: user.id,
-        } as unknown as undefined) as {
-          data: Array<{ out_org_id: string; out_project_id: string }> | null;
-        };
-        const workspaceResult = workspace?.[0];
-        if (workspaceResult?.out_project_id) {
-          setProjectId(workspaceResult.out_project_id);
-        }
-      } catch (err) {
-        console.error('Failed to fetch project ID:', err);
-      }
-    }
-    fetchProjectId();
-  }, [user?.id]);
 
   // Check if user is org admin/owner
   useEffect(() => {

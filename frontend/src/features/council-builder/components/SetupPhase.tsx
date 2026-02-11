@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Play, Plus, Trash2, ChevronDown, Brain, RotateCcw } from 'lucide-react';
-import { useSessionStore, useCouncilStore, useAuthStore, useUIStore } from '@/store';
+import { useSessionStore, useCouncilStore, useAuthStore, useUIStore, useWorkspaceStore } from '@/store';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReplayMode } from '@/hooks';
 import { supabase } from '@/lib/supabase';
@@ -114,6 +114,7 @@ export function SetupPhase() {
   const { user } = useAuthStore();
   const { addToast } = useUIStore();
   const { autoBalanceCouncils } = useSettingsStore();
+  const { projectId: workspaceProjectId, fetchWorkspace } = useWorkspaceStore();
   const { isReplayMode, replayData, modelInfo } = useReplayMode();
 
   // Get current balance status for UI indicator
@@ -320,26 +321,18 @@ export function SetupPhase() {
     setError(null);
 
     try {
-      // Step 1: Setup user workspace (org + project) using RPC function
-      const { data: workspace, error: workspaceError } = await supabase.rpc('setup_user_workspace', {
-        user_uuid: user.id,
-      } as unknown as undefined) as { data: Array<{ out_org_id: string; out_project_id: string }> | null; error: { message: string } | null };
-
-      if (workspaceError) {
-        throw new Error(`Failed to setup workspace: ${workspaceError.message}`);
+      // Step 1: Get project ID from workspace store (cached from login)
+      let projectId = workspaceProjectId;
+      if (!projectId) {
+        // Fallback: fetch workspace if not yet initialized
+        await fetchWorkspace(user.id);
+        projectId = useWorkspaceStore.getState().projectId;
+        if (!projectId) {
+          throw new Error('Failed to get workspace project ID');
+        }
       }
 
-      if (!workspace || workspace.length === 0) {
-        throw new Error('No workspace returned from setup');
-      }
-
-      const workspaceResult = workspace[0];
-      if (!workspaceResult) {
-        throw new Error('No workspace data returned');
-      }
-      const projectId = workspaceResult.out_project_id;
-
-      // Step 3: Create session
+      // Step 2: Create session
       const sessionTitle = prompt.content.substring(0, 100) + (prompt.content.length > 100 ? '...' : '');
       const { data: session, error: sessionError } = await (supabase
         .from('sessions') as ReturnType<typeof supabase.from>)

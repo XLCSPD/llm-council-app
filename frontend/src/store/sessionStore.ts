@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { sessionsApi } from '@/api';
+import { touchSession } from '@/features/decision-memory/api/smartHistory';
 import type {
   Analytics,
   FullSessionData,
@@ -167,6 +168,9 @@ export const useSessionStore = create<SessionState>((set) => ({
     try {
       set({ isLoading: true });
       const data = await sessionsApi.getFullSession(sessionId);
+
+      // Update last_accessed_at to prevent auto-archiving (fire-and-forget)
+      touchSession(sessionId).catch(() => {});
 
       // Map database phase (1-4) to UI phase
       const phaseMap: Record<number, PhaseType> = {

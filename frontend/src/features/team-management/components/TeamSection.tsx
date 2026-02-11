@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Users, UserPlus, Mail, Loader2, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, useWorkspaceStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { InviteModal } from './InviteModal';
 import { PendingInvitesList } from './PendingInvitesList';
@@ -15,6 +15,7 @@ import type { Invite, OrgMember, OrgData, MemberRole } from '../types';
 
 export function TeamSection() {
   const { user } = useAuthStore();
+  const { fetchWorkspace } = useWorkspaceStore();
   const [org, setOrg] = useState<OrgData | null>(null);
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -32,10 +33,8 @@ export function TeamSection() {
       setError(null);
 
       try {
-        // First, ensure user has a workspace set up
-        await supabase.rpc('setup_user_workspace', {
-          user_uuid: user.id,
-        } as unknown as undefined);
+        // Ensure user has a workspace set up (cached — no-op if already initialized)
+        await fetchWorkspace(user.id);
 
         // Get user's org membership (use limit(1) in case user has multiple orgs)
         const { data: membershipData, error: membershipError } = await supabase

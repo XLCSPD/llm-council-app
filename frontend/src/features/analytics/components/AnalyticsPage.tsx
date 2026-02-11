@@ -2,8 +2,8 @@
  * AnalyticsPage - Main analytics dashboard page
  */
 
-import { useEffect, useState } from 'react';
-import { ArrowLeft, BarChart3, Loader2, RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, BarChart3, Calendar, ChevronDown, Loader2, RefreshCw } from 'lucide-react';
 import { useUIStore, useAuthStore } from '@/store';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { supabase } from '@/lib/supabase';
@@ -41,6 +41,10 @@ export function AnalyticsPage() {
   const [orgId, setOrgId] = useState<string | null>(null);
   const [loadingOrg, setLoadingOrg] = useState(true);
 
+  // Custom time range dropdown
+  const [timeDropdownOpen, setTimeDropdownOpen] = useState(false);
+  const timeDropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!user) return;
 
@@ -58,6 +62,17 @@ export function AnalyticsPage() {
         setLoadingOrg(false);
       });
   }, [user]);
+
+  // Close time dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (timeDropdownRef.current && !timeDropdownRef.current.contains(e.target as Node)) {
+        setTimeDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const {
     summary,
@@ -79,6 +94,9 @@ export function AnalyticsPage() {
     orgId,
     refreshInterval: 30_000, // Auto-refresh every 30 seconds
   });
+
+  // Compute effective org ID for child components
+  const effectiveOrgId = scope === 'platform' ? null : orgId;
 
   // Update relative time display every 10 seconds
   const [, setTick] = useState(0);
@@ -121,23 +139,23 @@ export function AnalyticsPage() {
         <div className="flex items-center gap-3">
           {/* Scope toggle (only for platform admins) */}
           {isPlatformAdmin && (
-            <div className="flex rounded-lg bg-bg-tertiary/50 p-1">
+            <div className="flex rounded-xl glass-subtle p-1 gap-1">
               <button
                 onClick={() => setScope('org')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   scope === 'org'
-                    ? 'bg-accent-primary text-white'
-                    : 'text-text-secondary hover:text-text-primary'
+                    ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30 shadow-glow-teal'
+                    : 'text-slate-400 border border-transparent hover:text-slate-200 hover:bg-slate-700/30'
                 }`}
               >
                 Organization
               </button>
               <button
                 onClick={() => setScope('platform')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   scope === 'platform'
-                    ? 'bg-accent-primary text-white'
-                    : 'text-text-secondary hover:text-text-primary'
+                    ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30 shadow-glow-teal'
+                    : 'text-slate-400 border border-transparent hover:text-slate-200 hover:bg-slate-700/30'
                 }`}
               >
                 Platform
@@ -145,18 +163,37 @@ export function AnalyticsPage() {
             </div>
           )}
 
-          {/* Time range selector */}
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-            className="px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-glass-border text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/50"
-          >
-            {TIME_RANGE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          {/* Custom Time Range Dropdown */}
+          <div className="relative" ref={timeDropdownRef}>
+            <button
+              onClick={() => setTimeDropdownOpen(!timeDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl glass-subtle text-sm font-medium text-text-primary hover:border-teal-500/30 transition-all duration-200"
+            >
+              <Calendar className="w-4 h-4 text-accent" />
+              <span>{TIME_RANGE_OPTIONS.find((o) => o.value === timeRange)?.label}</span>
+              <ChevronDown className={`w-4 h-4 text-text-muted transition-transform duration-200 ${timeDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {timeDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-40 rounded-xl glass-strong p-1.5 z-50 shadow-lg animate-fade-in">
+                {TIME_RANGE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setTimeRange(option.value);
+                      setTimeDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-150 ${
+                      timeRange === option.value
+                        ? 'bg-teal-500/20 text-teal-300'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary/50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -255,8 +292,18 @@ export function AnalyticsPage() {
               <h2 className="text-lg font-semibold text-text-primary mb-6 flex items-center gap-2">
                 <span className="w-1.5 h-6 bg-gradient-accent rounded-full" />
                 Top Users
+                {usage.total_user_count > 0 && (
+                  <span className="text-sm font-normal text-text-muted ml-1">
+                    ({usage.total_user_count})
+                  </span>
+                )}
               </h2>
-              <UserActivitySection usage={usage} costs={costs} />
+              <UserActivitySection
+                usage={usage}
+                costs={costs}
+                orgId={effectiveOrgId}
+                timeRange={timeRange}
+              />
             </GlassCard>
           )}
 

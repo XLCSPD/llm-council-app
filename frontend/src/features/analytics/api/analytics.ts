@@ -117,6 +117,42 @@ export async function getCostAnalytics(
 }
 
 /**
+ * Get expanded user data with pagination (fetches both usage and cost endpoints)
+ */
+export async function getExpandedUsers(
+  userId: string,
+  orgId: string | null,
+  timeRange: TimeRange = '30d',
+  limit: number = 25,
+  offset: number = 0
+): Promise<{ usage: UsageAnalytics; costs: CostAnalytics }> {
+  const params = new URLSearchParams({
+    time_range: timeRange,
+    user_limit: String(limit),
+    user_offset: String(offset),
+  });
+  if (orgId) {
+    params.append('org_id', orgId);
+  }
+
+  const headers = { 'X-User-ID': userId };
+
+  const [usageRes, costsRes] = await Promise.all([
+    fetch(`${ORCHESTRATOR_URL}/api/analytics/usage?${params}`, { headers }),
+    fetch(`${ORCHESTRATOR_URL}/api/analytics/costs?${params}`, { headers }),
+  ]);
+
+  if (!usageRes.ok || !costsRes.ok) {
+    throw new Error('Failed to fetch expanded user data');
+  }
+
+  return {
+    usage: await usageRes.json(),
+    costs: await costsRes.json(),
+  };
+}
+
+/**
  * Get model performance analytics
  */
 export async function getModelAnalytics(

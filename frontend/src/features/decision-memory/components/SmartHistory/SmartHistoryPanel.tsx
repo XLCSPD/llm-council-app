@@ -3,12 +3,10 @@
  * Provides temporal grouping, filtering, pinning, and archiving
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Loader2, Search } from 'lucide-react';
-import { useAuthStore } from '@/store';
+import { useWorkspaceStore, useDecisionMemoryStore } from '@/store';
 import { useSmartHistory } from '../../hooks/useSmartHistory';
-import { useDecisionMemoryStore } from '@/store';
-import { supabase } from '@/lib/supabase';
 import { PinnedSection } from './PinnedSection';
 import { HistoryGroup } from './HistoryGroup';
 import { QuickFilters } from './QuickFilters';
@@ -27,39 +25,8 @@ export function SmartHistoryPanel({
   onDeleteSession,
   maxHeight = 'calc(100vh - 300px)',
 }: SmartHistoryPanelProps) {
-  const { user } = useAuthStore();
+  const { projectId } = useWorkspaceStore();
   const { openCommandPalette } = useDecisionMemoryStore();
-  const [projectId, setProjectId] = useState<string | null>(null);
-
-  // Fetch actual project ID from user workspace
-  useEffect(() => {
-    async function fetchProjectId() {
-      if (!user?.id) return;
-
-      try {
-        const { data: workspace, error } = await supabase.rpc('setup_user_workspace', {
-          user_uuid: user.id,
-        } as unknown as undefined) as {
-          data: Array<{ out_org_id: string; out_project_id: string }> | null;
-          error: { message: string } | null
-        };
-
-        if (error) {
-          console.error('Failed to get workspace:', error);
-          return;
-        }
-
-        const workspaceResult = workspace?.[0];
-        if (workspaceResult?.out_project_id) {
-          setProjectId(workspaceResult.out_project_id);
-        }
-      } catch (err) {
-        console.error('Failed to fetch project ID:', err);
-      }
-    }
-
-    fetchProjectId();
-  }, [user?.id]);
 
   const {
     groupedSessions,

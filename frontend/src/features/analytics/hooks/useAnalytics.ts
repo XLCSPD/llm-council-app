@@ -91,12 +91,17 @@ export function useAnalytics({
   // Determine effective org ID based on scope
   const effectiveOrgId = scope === 'platform' ? null : orgId;
 
-  // Check platform admin status
+  // Check platform admin status and default to platform scope for admins
   useEffect(() => {
     if (!userId) return;
 
     checkPlatformAdmin(userId)
-      .then(setIsPlatformAdmin)
+      .then((isAdmin) => {
+        setIsPlatformAdmin(isAdmin);
+        if (isAdmin) {
+          setScope('platform');
+        }
+      })
       .catch(() => setIsPlatformAdmin(false));
   }, [userId]);
 
@@ -159,10 +164,13 @@ export function useAnalytics({
 
   // Auto-refresh interval
   useEffect(() => {
-    if (refreshInterval <= 0 || !hasInitialData.current) return;
+    if (refreshInterval <= 0) return;
 
     const intervalId = setInterval(() => {
-      fetchAnalytics(true); // Background refresh
+      // Only refresh if initial data has loaded
+      if (hasInitialData.current) {
+        fetchAnalytics(true); // Background refresh
+      }
     }, refreshInterval);
 
     return () => clearInterval(intervalId);

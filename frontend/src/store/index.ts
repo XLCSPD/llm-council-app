@@ -5,3 +5,4 @@ export { useAuthStore } from './authStore';
 export { useSettingsStore } from './settingsStore';
 export { useHelpStore } from './helpStore';
 export { useDecisionMemoryStore, useCommandPaletteShortcut } from './decisionMemoryStore';
+export { useWorkspaceStore } from './workspaceStore';

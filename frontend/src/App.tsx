@@ -2,7 +2,7 @@ import { useEffect, useCallback, lazy, Suspense } from 'react';
 import { MainLayout } from '@/components/layout';
 import { AuthGuard, AuthCallbackPage, ResetPasswordPage } from '@/components/auth';
 import { TourOverlay } from '@/components/ui';
-import { useSessionStore, useCouncilStore, useAuthStore, useUIStore, useHelpStore } from '@/store';
+import { useSessionStore, useCouncilStore, useAuthStore, useUIStore, useHelpStore, useWorkspaceStore } from '@/store';
 import { modelsApi } from '@/api';
 import { supabase } from '@/lib/supabase';
 import { useCommandPalette } from '@/features/decision-memory';
@@ -97,6 +97,7 @@ function AppContent() {
   const { setAvailableModels, resetCouncil } = useCouncilStore();
   const { user } = useAuthStore();
   const currentView = useUIStore((state) => state.currentView);
+  const fetchWorkspace = useWorkspaceStore((state) => state.fetchWorkspace);
 
   // Register command palette keyboard shortcut (⌘K / Ctrl+K)
   useCommandPalette();
@@ -105,8 +106,11 @@ function AppContent() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Load sessions from Supabase (only if user is logged in)
         if (user) {
+          // Initialize workspace (cached — only runs once per login)
+          await fetchWorkspace(user.id);
+
+          // Load sessions from Supabase
           const { data: sessions, error: sessionsError } = await supabase
             .from('sessions')
             .select('id, title, created_at, project_id')
@@ -145,7 +149,7 @@ function AppContent() {
     };
 
     loadInitialData();
-  }, [setSessions, setAvailableModels, user]);
+  }, [setSessions, setAvailableModels, user, fetchWorkspace]);
 
   const handleNewSession = useCallback(() => {
     resetSession();

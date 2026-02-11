@@ -185,13 +185,17 @@ async def get_analytics_summary(
 
 async def get_usage_analytics(
     org_id: Optional[UUID] = None,
-    time_range: str = "30d"
+    time_range: str = "30d",
+    user_limit: int = 10,
+    user_offset: int = 0
 ) -> dict:
     """Get usage analytics with time series data.
 
     Args:
         org_id: Organization ID (None for platform-wide)
         time_range: Time range (7d, 30d, 90d, 1y)
+        user_limit: Max users to return (default 10)
+        user_offset: Offset for user pagination (default 0)
 
     Returns:
         Usage metrics with daily breakdown
@@ -275,8 +279,10 @@ async def get_usage_analytics(
         for date in all_dates
     ]
 
-    # Top users (get user emails)
-    top_user_ids = sorted(user_counts.items(), key=lambda x: -x[1])[:10]
+    # Top users (get user emails) with pagination
+    all_sorted_users = sorted(user_counts.items(), key=lambda x: -x[1])
+    total_user_count = len(all_sorted_users)
+    top_user_ids = all_sorted_users[user_offset:user_offset + user_limit]
     top_users = []
 
     for user_id, count in top_user_ids:
@@ -300,13 +306,16 @@ async def get_usage_analytics(
         "top_users": top_users,
         "total_sessions": len(sessions.data),
         "total_runs": len(runs_data),
+        "total_user_count": total_user_count,
     }
 
 
 async def get_cost_analytics(
     org_id: Optional[UUID] = None,
     time_range: str = "30d",
-    group_by: str = "model"  # model, user, day
+    group_by: str = "model",  # model, user, day
+    user_limit: int = 10,
+    user_offset: int = 0
 ) -> dict:
     """Get cost breakdown analytics.
 
@@ -314,6 +323,8 @@ async def get_cost_analytics(
         org_id: Organization ID (None for platform-wide)
         time_range: Time range (7d, 30d, 90d, 1y)
         group_by: Grouping dimension (model, user, day)
+        user_limit: Max users to return (default 10)
+        user_offset: Offset for user pagination (default 0)
 
     Returns:
         Cost breakdown data
@@ -416,8 +427,10 @@ async def get_cost_analytics(
             user_costs[user_id]["cost"] += cost
             user_costs[user_id]["run_count"] += 1
 
-    # Sort and get top 10, then add emails
-    sorted_users = sorted(user_costs.values(), key=lambda x: -x["cost"])[:10]
+    # Sort and paginate, then add emails
+    all_sorted_users = sorted(user_costs.values(), key=lambda x: -x["cost"])
+    total_user_count = len(all_sorted_users)
+    sorted_users = all_sorted_users[user_offset:user_offset + user_limit]
     by_user = []
     for user_data in sorted_users:
         email = None
@@ -448,6 +461,7 @@ async def get_cost_analytics(
         "by_user": by_user,
         "by_day": by_day,
         "total": round(total, 2),
+        "total_user_count": total_user_count,
     }
 
 

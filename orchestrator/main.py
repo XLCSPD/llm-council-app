@@ -892,6 +892,8 @@ async def get_summary_endpoint(
 async def get_usage_endpoint(
     org_id: Optional[UUID] = None,
     time_range: str = "30d",
+    user_limit: int = 10,
+    user_offset: int = 0,
     x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
 ):
     """Get usage analytics with time series data.
@@ -899,6 +901,8 @@ async def get_usage_endpoint(
     Args:
         org_id: Organization ID (omit for platform-wide, requires platform admin)
         time_range: Time range - 7d, 30d, 90d, 1y (default: 30d)
+        user_limit: Max users to return (default: 10)
+        user_offset: Offset for user pagination (default: 0)
 
     Requires X-User-ID header.
     """
@@ -917,7 +921,7 @@ async def get_usage_endpoint(
         )
 
     try:
-        usage = await get_usage_analytics(org_id, time_range)
+        usage = await get_usage_analytics(org_id, time_range, user_limit, user_offset)
         return usage
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get usage analytics: {str(e)}")
@@ -928,6 +932,8 @@ async def get_costs_endpoint(
     org_id: Optional[UUID] = None,
     time_range: str = "30d",
     group_by: str = "model",
+    user_limit: int = 10,
+    user_offset: int = 0,
     x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
 ):
     """Get cost breakdown analytics.
@@ -936,6 +942,8 @@ async def get_costs_endpoint(
         org_id: Organization ID (omit for platform-wide, requires platform admin)
         time_range: Time range - 7d, 30d, 90d, 1y (default: 30d)
         group_by: Grouping - model, user, day (default: model)
+        user_limit: Max users to return (default: 10)
+        user_offset: Offset for user pagination (default: 0)
 
     Requires X-User-ID header.
     """
@@ -954,7 +962,7 @@ async def get_costs_endpoint(
         )
 
     try:
-        costs = await get_cost_analytics(org_id, time_range, group_by)
+        costs = await get_cost_analytics(org_id, time_range, group_by, user_limit, user_offset)
         return costs
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get cost analytics: {str(e)}")
